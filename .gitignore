@@ -1,0 +1,7 @@
+# Built agent binaries
+/lookout-agent
+/lookout-agent-*
+*.exe
+
+# Go
+/vendor/
