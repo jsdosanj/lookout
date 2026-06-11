@@ -6,6 +6,8 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://jsdosanj.github.io',
   base: '/lookout-site',
+  // Build into ./docs so GitHub Pages can deploy from main /docs (single branch).
+  outDir: './docs',
   integrations: [sitemap()],
   vite: { plugins: [tailwindcss()] },
 });
