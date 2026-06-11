@@ -37,6 +37,9 @@ func collectHost() (Host, error) {
 	} else {
 		h.Virtualization = "physical"
 	}
+	if out, err := runCmd("fdesetup", "status"); err == nil {
+		h.Encryption = parseFileVault(out)
+	}
 	return h, nil
 }
 

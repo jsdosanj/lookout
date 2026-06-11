@@ -91,6 +91,44 @@ func winVirt(s string) string {
 	}
 }
 
+// parseFileVault reads macOS `fdesetup status`.
+func parseFileVault(out string) string {
+	switch {
+	case strings.Contains(out, "FileVault is On"):
+		return "on"
+	case strings.Contains(out, "FileVault is Off"):
+		return "off"
+	default:
+		return ""
+	}
+}
+
+// parseBitLocker reads a Windows BitLocker VolumeStatus.
+func parseBitLocker(out string) string {
+	out = strings.TrimSpace(out)
+	switch {
+	case strings.Contains(out, "FullyEncrypted"), strings.Contains(out, "EncryptionInProgress"):
+		return "on"
+	case out == "":
+		return ""
+	default:
+		return "off"
+	}
+}
+
+// parseLsblkCrypt reads `lsblk -rno TYPE`; a "crypt" device means LUKS is in use.
+func parseLsblkCrypt(out string) string {
+	if strings.TrimSpace(out) == "" {
+		return ""
+	}
+	for _, line := range strings.Split(out, "\n") {
+		if strings.TrimSpace(line) == "crypt" {
+			return "on"
+		}
+	}
+	return "off"
+}
+
 func round1(f float64) float64 { return math.Round(f*10) / 10 }
 
 func clampPct(f float64) float64 {

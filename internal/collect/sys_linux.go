@@ -25,6 +25,9 @@ func collectHost() (Host, error) {
 	if v, err := runCmd("systemd-detect-virt"); err == nil {
 		h.Virtualization = normVirt(v)
 	}
+	if out, err := runCmd("lsblk", "-rno", "TYPE"); err == nil {
+		h.Encryption = parseLsblkCrypt(out)
+	}
 	return h, nil
 }
 

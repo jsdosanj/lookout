@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,6 +20,8 @@ type dashView struct {
 	Servers                      []cardView
 	OK, Warning, Critical, Stale int
 	Total                        int
+	EncryptedCount               int
+	OSDistJSON                   template.JS
 	UserEmail                    string
 	CanManageUsers               bool
 }
@@ -44,7 +47,7 @@ type detailView struct {
 	UserEmail                                string
 	CanManageUsers                           bool
 	OS, Platform, Version, Kernel, Arch, CPU string
-	Virtualization                           string
+	Virtualization, Encryption               string
 	Cores                                    int
 	Status                                   string
 	Reasons                                  []string
@@ -99,9 +102,18 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 
 func buildDashView(servers []*store.Server, now time.Time, static bool) dashView {
 	var d dashView
+	osCount := map[string]int{}
 	for _, srv := range servers {
 		h := store.Evaluate(srv, now)
 		d.Total++
+		plat := srv.LastReport.Host.Platform
+		if plat == "" {
+			plat = srv.LastReport.Host.OS
+		}
+		osCount[plat]++
+		if srv.LastReport.Host.Encryption == "on" {
+			d.EncryptedCount++
+		}
 		switch h.Status {
 		case "ok":
 			d.OK++
@@ -138,7 +150,28 @@ func buildDashView(servers []*store.Server, now time.Time, static bool) dashView
 		}
 		d.Servers = append(d.Servers, card)
 	}
+	d.OSDistJSON = osDistJSON(osCount)
 	return d
+}
+
+// osDistJSON marshals an OS→count map into {labels, counts} for a doughnut chart.
+func osDistJSON(osCount map[string]int) template.JS {
+	type od struct {
+		Labels []string `json:"labels"`
+		Counts []int    `json:"counts"`
+	}
+	keys := make([]string, 0, len(osCount))
+	for k := range osCount {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool { return osCount[keys[i]] > osCount[keys[j]] })
+	o := od{Labels: []string{}, Counts: []int{}}
+	for _, k := range keys {
+		o.Labels = append(o.Labels, k)
+		o.Counts = append(o.Counts, osCount[k])
+	}
+	b, _ := json.Marshal(o)
+	return template.JS(b)
 }
 
 func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
@@ -158,6 +191,7 @@ func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
 		Arch:        rep.Host.Arch,
 		CPU:            rep.Specs.CPUModel,
 		Virtualization: rep.Host.Virtualization,
+		Encryption:     rep.Host.Encryption,
 		Cores:          rep.Specs.CPUCores,
 		Status:         h.Status,
 		Reasons:        h.Reasons,

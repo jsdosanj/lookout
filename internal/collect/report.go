@@ -34,6 +34,7 @@ type Host struct {
 	Kernel         string `json:"kernel,omitempty"`
 	UptimeSeconds  int64  `json:"uptime_seconds"`
 	Virtualization string `json:"virtualization,omitempty"` // physical, kvm, vmware, hyperv, ...
+	Encryption     string `json:"encryption,omitempty"`     // on, off, "" (unknown) — FileVault/BitLocker/LUKS
 }
 
 // Specs is point-in-time hardware + resource usage.

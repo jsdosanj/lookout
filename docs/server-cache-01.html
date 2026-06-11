@@ -1,5 +1,12 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>cache-01 &middot; Lookout</title><style>
 :root{--bg:#0b1220;--panel:#121a2e;--line:#1f2a44;--ink:#e6edf7;--muted:#94a3b8;--brand:#6366f1;--ok:#22c55e;--warn:#f59e0b;--crit:#ef4444;--stale:#64748b}
+body.light{--bg:#f1f5f9;--panel:#ffffff;--line:#e2e8f0;--ink:#0f172a;--muted:#64748b}
+.overview-row{display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;margin-bottom:1.4rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.1rem}
+.panel-h{margin:0 0 .6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:.78rem}
+.panel.enc{display:flex;flex-direction:column;justify-content:center}
+.enc-big{font-size:2.4rem;font-weight:800;color:var(--ink)}
+@media(max-width:760px){.overview-row{grid-template-columns:1fr}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 a{color:inherit;text-decoration:none}
@@ -48,9 +55,9 @@ tr:last-child td{border-bottom:none}
 .svc-scroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:.3rem}
 .svc-scroll table{border:none}
 footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
-</style></head><body>
+</style></head><body><script>function lkTheme(){document.body.classList.toggle('light');try{localStorage.setItem('lk-theme',document.body.classList.contains('light')?'light':'dark')}catch(e){}}(function(){try{if(localStorage.getItem('lk-theme')==='light')document.body.classList.add('light')}catch(e){}})();</script>
 <header class="top"><div class="logo">Look<b>out</b></div>
-  <div class="sub">Control plane</div>
+  <div class="topnav"><button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">◑ Theme</button><span class="sub">Control plane</span></div>
 </header>
 <div class="wrap">
   <a class="back" href="index.html">&larr; All servers</a>
@@ -66,10 +73,11 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
     <div class="item"><div class="l">CPU</div><div class="v">Intel Xeon E5-2670</div></div>
     <div class="item"><div class="l">Cores</div><div class="v">4</div></div>
     <div class="item"><div class="l">Platform type</div><div class="v">vmware</div></div>
+    <div class="item"><div class="l">Disk encryption</div><div class="v">on</div></div>
     <div class="item"><div class="l">Uptime</div><div class="v">13d 17h 50m</div></div>
     <div class="item"><div class="l">Load average</div><div class="v">0.1 0.2 0.2 </div></div>
     <div class="item"><div class="l">Packages</div><div class="v">88</div></div>
-    <div class="item"><div class="l">Last report</div><div class="v">2026-06-11 04:07 UTC (22m ago)</div></div>
+    <div class="item"><div class="l">Last report</div><div class="v">2026-06-11 04:13 UTC (22m ago)</div></div>
   </div>
 
   <h2>Performance (recent)</h2>
@@ -93,7 +101,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
 <footer>Lookout &middot; open-source infrastructure monitoring</footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-  const D = {"labels":["20:28","20:29","20:30","20:31","20:32","20:33","20:34","20:35","20:36","20:37","20:38","20:39","20:40","20:41","20:42","20:43","20:44","20:45","20:46","20:47","20:48","20:49","20:50","20:51","20:52","20:53","20:54","20:55","20:56","20:57","20:58","20:59","21:00","21:01","21:02","21:03","21:04","21:05","21:06","21:07"],"cpu":[20.2,17.9,14.4,9.9,5.3,1.2,0,0,0,2.8,7.8,13.6,19.1,23.4,25.9,26.1,24.2,20.7,16.2,11.5,7.5,4.7,3.2,3.1,4.1,5.8,7.6,9.2,10.5,11.5,12.4,13.3,14.5,16.1,17.9,19.6,20.8,20.9,19.7,17],"mem":[38.7,38,37.4,36.7,36.1,35.5,35,34.6,34.2,34,33.9,33.8,33.9,34.1,34.4,34.8,35.3,35.8,36.4,37.1,37.7,38.4,39.1,39.7,40.2,40.7,41.2,41.5,41.7,41.8,41.8,41.7,41.5,41.2,40.8,40.3,39.8,39.2,38.5,37.8],"disk":[22.1,22.1,22.2,22.2,22.3,22.3,22.4,22.4,22.5,22.5,22.6,22.6,22.7,22.7,22.8,22.8,22.9,22.9,23,23,23.1,23.1,23.2,23.2,23.3,23.3,23.4,23.4,23.5,23.5,23.6,23.6,23.7,23.7,23.8,23.8,23.9,23.9,24,24]};
+  const D = {"labels":["20:34","20:35","20:36","20:37","20:38","20:39","20:40","20:41","20:42","20:43","20:44","20:45","20:46","20:47","20:48","20:49","20:50","20:51","20:52","20:53","20:54","20:55","20:56","20:57","20:58","20:59","21:00","21:01","21:02","21:03","21:04","21:05","21:06","21:07","21:08","21:09","21:10","21:11","21:12","21:13"],"cpu":[20.2,17.9,14.4,9.9,5.3,1.2,0,0,0,2.8,7.8,13.6,19.1,23.4,25.9,26.1,24.2,20.7,16.2,11.5,7.5,4.7,3.2,3.1,4.1,5.8,7.6,9.2,10.5,11.5,12.4,13.3,14.5,16.1,17.9,19.6,20.8,20.9,19.7,17],"mem":[38.7,38,37.4,36.7,36.1,35.5,35,34.6,34.2,34,33.9,33.8,33.9,34.1,34.4,34.8,35.3,35.8,36.4,37.1,37.7,38.4,39.1,39.7,40.2,40.7,41.2,41.5,41.7,41.8,41.8,41.7,41.5,41.2,40.8,40.3,39.8,39.2,38.5,37.8],"disk":[22.1,22.1,22.2,22.2,22.3,22.3,22.4,22.4,22.5,22.5,22.6,22.6,22.7,22.7,22.8,22.8,22.9,22.9,23,23,23.1,23.1,23.2,23.2,23.3,23.3,23.4,23.4,23.5,23.5,23.6,23.6,23.7,23.7,23.8,23.8,23.9,23.9,24,24]};
   if (window.Chart && document.getElementById('perf') && D.labels.length) {
     new Chart(document.getElementById('perf'), {
       type: 'line',

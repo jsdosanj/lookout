@@ -17,6 +17,13 @@ var funcs = template.FuncMap{
 
 const cssConst = `
 :root{--bg:#0b1220;--panel:#121a2e;--line:#1f2a44;--ink:#e6edf7;--muted:#94a3b8;--brand:#6366f1;--ok:#22c55e;--warn:#f59e0b;--crit:#ef4444;--stale:#64748b}
+body.light{--bg:#f1f5f9;--panel:#ffffff;--line:#e2e8f0;--ink:#0f172a;--muted:#64748b}
+.overview-row{display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;margin-bottom:1.4rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.1rem}
+.panel-h{margin:0 0 .6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:.78rem}
+.panel.enc{display:flex;flex-direction:column;justify-content:center}
+.enc-big{font-size:2.4rem;font-weight:800;color:var(--ink)}
+@media(max-width:760px){.overview-row{grid-template-columns:1fr}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 a{color:inherit;text-decoration:none}
@@ -68,11 +75,13 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
 `
 
 const headOpen = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`
-const styleTag = `<style>` + cssConst + `</style></head><body>`
+const styleTag = `<style>` + cssConst + `</style></head><body>` +
+	`<script>function lkTheme(){document.body.classList.toggle('light');try{localStorage.setItem('lk-theme',document.body.classList.contains('light')?'light':'dark')}catch(e){}}` +
+	`(function(){try{if(localStorage.getItem('lk-theme')==='light')document.body.classList.add('light')}catch(e){}})();</script>`
 
 const dashBody = `
 <header class="top"><div class="logo">Look<b>out</b></div>
-  {{if .UserEmail}}<div class="topnav">{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form></div>{{else}}<div class="sub">Control plane</div>{{end}}
+  <div class="topnav"><button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">◑ Theme</button>{{if .UserEmail}}{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form>{{else}}<span class="sub">Control plane</span>{{end}}</div>
 </header>
 <div class="wrap">
   <div class="summary">
@@ -83,6 +92,10 @@ const dashBody = `
     <span class="chip"><span class="dot d-stale"></span><b>{{.Stale}}</b> stale</span>
   </div>
   {{if .Servers}}
+  <div class="overview-row">
+    <div class="panel"><h3 class="panel-h">Operating systems</h3><canvas id="osChart" height="150"></canvas></div>
+    <div class="panel enc"><h3 class="panel-h">Disk encryption</h3><div class="enc-big">{{.EncryptedCount}}/{{.Total}}</div><p class="sub">servers with FileVault / BitLocker / LUKS enabled</p></div>
+  </div>
   <div class="grid">
     {{range .Servers}}
     <a class="card" href="{{.Href}}">
@@ -108,11 +121,23 @@ const dashBody = `
   {{end}}
 </div>
 <footer>Lookout &middot; open-source infrastructure monitoring</footer>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const OS = {{.OSDistJSON}};
+  if (window.Chart && document.getElementById('osChart') && OS.labels && OS.labels.length) {
+    new Chart(document.getElementById('osChart'), {
+      type: 'doughnut',
+      data: { labels: OS.labels, datasets: [{ data: OS.counts, borderWidth: 0,
+        backgroundColor: ['#6366f1','#22d3ee','#f59e0b','#22c55e','#ef4444','#a855f7','#64748b','#ec4899'] }] },
+      options: { plugins: { legend: { position: 'right', labels: { color: '#94a3b8', boxWidth: 12 } } } }
+    });
+  }
+</script>
 </body></html>`
 
 const detailBody = `
 <header class="top"><div class="logo">Look<b>out</b></div>
-  {{if .UserEmail}}<div class="topnav">{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form></div>{{else}}<div class="sub">Control plane</div>{{end}}
+  <div class="topnav"><button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">◑ Theme</button>{{if .UserEmail}}{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form>{{else}}<span class="sub">Control plane</span>{{end}}</div>
 </header>
 <div class="wrap">
   <a class="back" href="{{.BackHref}}">&larr; All servers</a>
@@ -128,6 +153,7 @@ const detailBody = `
     <div class="item"><div class="l">CPU</div><div class="v">{{.CPU}}</div></div>
     <div class="item"><div class="l">Cores</div><div class="v">{{.Cores}}</div></div>
     {{if .Virtualization}}<div class="item"><div class="l">Platform type</div><div class="v">{{.Virtualization}}</div></div>{{end}}
+    {{if .Encryption}}<div class="item"><div class="l">Disk encryption</div><div class="v">{{.Encryption}}</div></div>{{end}}
     <div class="item"><div class="l">Uptime</div><div class="v">{{.Uptime}}</div></div>
     <div class="item"><div class="l">Load average</div><div class="v">{{range .LoadAvg}}{{.}} {{else}}&mdash;{{end}}</div></div>
     <div class="item"><div class="l">Packages</div><div class="v">{{.Packages}}</div></div>
