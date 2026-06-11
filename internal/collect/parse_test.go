@@ -138,6 +138,20 @@ func TestVirt(t *testing.T) {
 	}
 }
 
+func TestParseProcesses(t *testing.T) {
+	in := "  101  3.5  1.0 /usr/sbin/lowcpu\n  202 80.0  5.0 /usr/bin/hot\n  303 12.0  2.0 mid\nbad line\n"
+	ps := parseProcesses(in)
+	if len(ps) != 3 {
+		t.Fatalf("got %d processes, want 3", len(ps))
+	}
+	if ps[0].Name != "hot" || ps[0].CPUPct != 80 { // sorted by CPU desc, basename only
+		t.Errorf("top process = %+v", ps[0])
+	}
+	if ps[2].PID != 101 {
+		t.Errorf("last process pid = %d, want 101", ps[2].PID)
+	}
+}
+
 func TestEncryption(t *testing.T) {
 	if parseFileVault("FileVault is On.") != "on" || parseFileVault("FileVault is Off.") != "off" || parseFileVault("?") != "" {
 		t.Error("FileVault parse wrong")

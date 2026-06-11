@@ -60,6 +60,17 @@ func collectSpecs() (Specs, error) {
 	if out, err := ps(`Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | ForEach-Object { "$($_.DeviceID)` + "\t" + `$($_.Size)` + "\t" + `$($_.FreeSpace)" }`); err == nil {
 		s.Disks = parseWinDisks(out)
 	}
+	if out, err := ps(`Get-Process | Sort-Object CPU -Descending | Select-Object -First 10 | ForEach-Object { "$($_.Id)` + "\t" + `$($_.CPU)` + "\t" + `$($_.ProcessName)" }`); err == nil {
+		for _, line := range strings.Split(out, "\n") {
+			f := strings.Split(strings.TrimSpace(line), "\t")
+			if len(f) < 3 {
+				continue
+			}
+			pid, _ := strconv.Atoi(strings.TrimSpace(f[0]))
+			cpu, _ := strconv.ParseFloat(strings.TrimSpace(f[1]), 64)
+			s.Processes = append(s.Processes, Process{PID: pid, Name: strings.TrimSpace(f[2]), CPUPct: cpu})
+		}
+	}
 	return s, nil
 }
 

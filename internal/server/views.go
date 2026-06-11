@@ -18,6 +18,7 @@ import (
 
 type dashView struct {
 	Servers                      []cardView
+	Attention                    []cardView // warning/critical/stale, for the needs-attention panel
 	OK, Warning, Critical, Stale int
 	Total                        int
 	EncryptedCount               int
@@ -63,9 +64,12 @@ type detailView struct {
 	MemUsedMB, MemTotalMB                    uint64
 	LoadAvg                                  []float64
 	Disks                                    []diskView
+	Network                                  []collect.NetInterface
+	Processes                                []collect.Process
 	Services                                 []collect.Service
 	RunningServices                          int
 	Packages                                 int
+	PackageList                              []collect.Package
 	LastSeen, CollectedAt                    string
 	ChartData                                template.JS
 }
@@ -156,6 +160,9 @@ func buildDashView(servers []*store.Server, now time.Time, static bool) dashView
 			}
 		}
 		d.Servers = append(d.Servers, card)
+		if h.Status != "ok" {
+			d.Attention = append(d.Attention, card)
+		}
 	}
 	d.OSDistJSON = osDistJSON(osCount)
 	return d
@@ -209,7 +216,10 @@ func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
 		MemUsedMB:      rep.Specs.MemUsedMB,
 		MemTotalMB:     rep.Specs.MemTotalMB,
 		LoadAvg:        rep.Specs.LoadAvg,
+		Network:        rep.Specs.Network,
+		Processes:      rep.Specs.Processes,
 		Packages:       len(rep.Packages),
+		PackageList:    rep.Packages,
 		Services:       rep.Services,
 		LastSeen:       humanAgo(now.Sub(srv.LastSeen)),
 		CollectedAt:    rep.CollectedAt.Format("2006-01-02 15:04 MST"),

@@ -23,7 +23,15 @@ body.light{--bg:#f1f5f9;--panel:#ffffff;--line:#e2e8f0;--ink:#0f172a;--muted:#64
 .panel-h{margin:0 0 .6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:.78rem}
 .panel.enc{display:flex;flex-direction:column;justify-content:center}
 .enc-big{font-size:2.4rem;font-weight:800;color:var(--ink)}
-@media(max-width:760px){.overview-row{grid-template-columns:1fr}}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem;margin-bottom:1.4rem}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem 1.2rem}
+.stat .n{font-size:2rem;font-weight:800;color:var(--ink);line-height:1.1}
+.stat .l{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:.2rem}
+.attention{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.4rem}
+.att-row{display:flex;align-items:center;gap:.7rem;padding:.5rem 0;border-top:1px solid var(--line)}
+.att-row:first-of-type{border-top:none}
+.att-row b{color:var(--ink)}
+@media(max-width:760px){.overview-row{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 a{color:inherit;text-decoration:none}
@@ -104,13 +112,20 @@ const styleTag = `<style>` + cssConst + `</style></head><body>` +
 
 const dashBody = `
 <div class="wrap">
-  <div class="summary">
-    <span class="chip"><b>{{.Total}}</b> servers</span>
-    <span class="chip"><span class="dot d-ok"></span><b>{{.OK}}</b> ok</span>
-    <span class="chip"><span class="dot d-warning"></span><b>{{.Warning}}</b> warning</span>
-    <span class="chip"><span class="dot d-critical"></span><b>{{.Critical}}</b> critical</span>
-    <span class="chip"><span class="dot d-stale"></span><b>{{.Stale}}</b> stale</span>
+  <h1 style="margin-bottom:1rem">Overview</h1>
+  <div class="stats">
+    <div class="stat"><div class="n">{{.Total}}</div><div class="l">Servers</div></div>
+    <div class="stat"><div class="n" style="color:var(--ok)">{{.OK}}</div><div class="l">OK</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">{{.Warning}}</div><div class="l">Warning</div></div>
+    <div class="stat"><div class="n" style="color:var(--crit)">{{.Critical}}</div><div class="l">Critical</div></div>
+    <div class="stat"><div class="n" style="color:var(--stale)">{{.Stale}}</div><div class="l">Stale</div></div>
   </div>
+  {{if .Attention}}
+  <div class="attention">
+    <h3 class="panel-h" style="color:var(--warn)">&#9888; Needs attention</h3>
+    {{range .Attention}}<a class="att-row" href="{{.Href}}"><span class="pill s-{{.Status}}">{{.Status}}</span><b>{{.ID}}</b><span class="sub">{{range .Reasons}}{{.}} · {{end}}{{if not .Reasons}}{{.Platform}}{{end}}</span></a>{{end}}
+  </div>
+  {{end}}
   {{if .Servers}}
   <div class="overview-row" id="overviewRow">
     <div class="panel" id="panel-os"><h3 class="panel-h">Operating systems</h3><canvas id="osChart" height="150"></canvas></div>
@@ -197,10 +212,29 @@ const detailBody = `
     <td><div class="bar" style="width:140px;display:inline-block;vertical-align:middle"><i class="{{barclass .Pct}}" style="{{.Bar}}"></i></div> {{.Pct}}%</td></tr>{{end}}
   </table>
 
+  {{if .Network}}<h2>Network</h2>
+  <table><tr><th>Interface</th><th>IPv4 address</th><th>MAC</th></tr>
+  {{range .Network}}<tr><td>{{.Name}}</td><td>{{.IPv4}}</td><td class="sub">{{.MAC}}</td></tr>{{end}}
+  </table>{{end}}
+
+  {{if .Processes}}<h2>Top processes (by CPU)</h2>
+  <table><tr><th>PID</th><th>Process</th><th>CPU %</th><th>Mem %</th></tr>
+  {{range .Processes}}<tr><td>{{.PID}}</td><td>{{.Name}}</td><td>{{.CPUPct}}%</td><td>{{.MemPct}}%</td></tr>{{end}}
+  </table>{{end}}
+
   <h2>Services ({{.RunningServices}} running of {{len .Services}})</h2>
   <div class="svc-scroll"><table><tr><th>Service</th><th>Status</th></tr>
   {{range .Services}}<tr><td>{{.Name}}</td><td><span class="dot {{if eq .Status "running"}}d-ok{{else}}d-stale{{end}}"></span>{{.Status}}</td></tr>{{end}}
   </table></div>
+
+  {{if .PackageList}}<h2>Installed packages ({{.Packages}})</h2>
+  <input id="pkgSearch" placeholder="Search packages…" style="width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:.5rem .7rem;font:inherit;margin-bottom:.4rem">
+  <div class="svc-scroll"><table id="pkgTable"><tr><th>Name</th><th>Version</th></tr>
+  {{range .PackageList}}{{if .Name}}<tr><td>{{.Name}}</td><td class="sub">{{.Version}}</td></tr>{{end}}{{end}}
+  </table></div>
+  <script>(function(){var s=document.getElementById('pkgSearch'),t=document.getElementById('pkgTable');if(!s||!t)return;
+    s.addEventListener('input',function(){var q=s.value.toLowerCase();Array.prototype.slice.call(t.rows,1).forEach(function(r){
+      r.style.display=r.cells[0].textContent.toLowerCase().indexOf(q)>=0?'':'none';});});})();</script>{{end}}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>

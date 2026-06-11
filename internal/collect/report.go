@@ -6,6 +6,7 @@
 package collect
 
 import (
+	"net"
 	"runtime"
 	"time"
 )
@@ -39,13 +40,30 @@ type Host struct {
 
 // Specs is point-in-time hardware + resource usage.
 type Specs struct {
-	CPUModel   string    `json:"cpu_model"`
-	CPUCores   int       `json:"cpu_cores"`
-	CPUPercent float64   `json:"cpu_percent"`
-	MemTotalMB uint64    `json:"mem_total_mb"`
-	MemUsedMB  uint64    `json:"mem_used_mb"`
-	LoadAvg    []float64 `json:"load_avg,omitempty"`
-	Disks      []Disk    `json:"disks"`
+	CPUModel   string         `json:"cpu_model"`
+	CPUCores   int            `json:"cpu_cores"`
+	CPUPercent float64        `json:"cpu_percent"`
+	MemTotalMB uint64         `json:"mem_total_mb"`
+	MemUsedMB  uint64         `json:"mem_used_mb"`
+	LoadAvg    []float64      `json:"load_avg,omitempty"`
+	Disks      []Disk         `json:"disks"`
+	Network    []NetInterface `json:"network,omitempty"`
+	Processes  []Process      `json:"processes,omitempty"`
+}
+
+// NetInterface is one up, non-loopback network interface with an IPv4 address.
+type NetInterface struct {
+	Name string `json:"name"`
+	IPv4 string `json:"ipv4"`
+	MAC  string `json:"mac,omitempty"`
+}
+
+// Process is one running process (the agent reports the busiest few).
+type Process struct {
+	PID    int     `json:"pid"`
+	Name   string  `json:"name"`
+	CPUPct float64 `json:"cpu_pct"`
+	MemPct float64 `json:"mem_pct"`
 }
 
 // Disk is one mounted filesystem.
@@ -83,6 +101,7 @@ func Collect() (*Report, error) {
 	if err != nil {
 		return nil, err
 	}
+	specs.Network = networkInterfaces()
 
 	pkgs, _ := collectPackages()
 	svcs, _ := collectServices()
@@ -95,4 +114,31 @@ func Collect() (*Report, error) {
 		Packages:      pkgs,
 		Services:      svcs,
 	}, nil
+}
+
+// networkInterfaces lists up, non-loopback interfaces that have an IPv4 address.
+// Uses the standard library, so it works identically on every platform.
+func networkInterfaces() []NetInterface {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+	var out []NetInterface
+	for _, ifc := range ifaces {
+		if ifc.Flags&net.FlagUp == 0 || ifc.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		ni := NetInterface{Name: ifc.Name, MAC: ifc.HardwareAddr.String()}
+		addrs, _ := ifc.Addrs()
+		for _, a := range addrs {
+			if ipnet, ok := a.(*net.IPNet); ok && ipnet.IP.To4() != nil {
+				ni.IPv4 = ipnet.IP.String()
+				break
+			}
+		}
+		if ni.IPv4 != "" {
+			out = append(out, ni)
+		}
+	}
+	return out
 }

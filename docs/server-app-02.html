@@ -6,7 +6,15 @@ body.light{--bg:#f1f5f9;--panel:#ffffff;--line:#e2e8f0;--ink:#0f172a;--muted:#64
 .panel-h{margin:0 0 .6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:.78rem}
 .panel.enc{display:flex;flex-direction:column;justify-content:center}
 .enc-big{font-size:2.4rem;font-weight:800;color:var(--ink)}
-@media(max-width:760px){.overview-row{grid-template-columns:1fr}}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem;margin-bottom:1.4rem}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem 1.2rem}
+.stat .n{font-size:2rem;font-weight:800;color:var(--ink);line-height:1.1}
+.stat .l{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:.2rem}
+.attention{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.4rem}
+.att-row{display:flex;align-items:center;gap:.7rem;padding:.5rem 0;border-top:1px solid var(--line)}
+.att-row:first-of-type{border-top:none}
+.att-row b{color:var(--ink)}
+@media(max-width:760px){.overview-row{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 a{color:inherit;text-decoration:none}
@@ -99,7 +107,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
     <div class="item"><div class="l">Uptime</div><div class="v">13d 17h 50m</div></div>
     <div class="item"><div class="l">Load average</div><div class="v">2.2 2.4 2.1 </div></div>
     <div class="item"><div class="l">Packages</div><div class="v">176</div></div>
-    <div class="item"><div class="l">Last report</div><div class="v">2026-06-11 04:27 UTC (2m ago)</div></div>
+    <div class="item"><div class="l">Last report</div><div class="v">2026-06-11 05:10 UTC (2m ago)</div></div>
   </div>
 
   <h2>Performance (recent)</h2>
@@ -115,14 +123,33 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
     <td><div class="bar" style="width:140px;display:inline-block;vertical-align:middle"><i class="warn" style="width:83%"></i></div> 83%</td></tr>
   </table>
 
+  <h2>Network</h2>
+  <table><tr><th>Interface</th><th>IPv4 address</th><th>MAC</th></tr>
+  <tr><td>eth0</td><td>10.0.1.22</td><td class="sub">02:42:ac:11:00:22</td></tr><tr><td>eth1</td><td>172.16.0.7</td><td class="sub"></td></tr>
+  </table>
+
+  <h2>Top processes (by CPU)</h2>
+  <table><tr><th>PID</th><th>Process</th><th>CPU %</th><th>Mem %</th></tr>
+  <tr><td>1020</td><td>node</td><td>64%</td><td>20%</td></tr><tr><td>1021</td><td>redis-server</td><td>33%</td><td>17%</td></tr><tr><td>1022</td><td>python3</td><td>23.3%</td><td>14%</td></tr><tr><td>1023</td><td>sshd</td><td>19%</td><td>11%</td></tr><tr><td>1024</td><td>containerd</td><td>16.8%</td><td>8%</td></tr>
+  </table>
+
   <h2>Services (3 running of 3)</h2>
   <div class="svc-scroll"><table><tr><th>Service</th><th>Status</th></tr>
   <tr><td>lookout-app</td><td><span class="dot d-ok"></span>running</td></tr><tr><td>ssh</td><td><span class="dot d-ok"></span>running</td></tr><tr><td>redis</td><td><span class="dot d-ok"></span>running</td></tr>
   </table></div>
+
+  <h2>Installed packages (176)</h2>
+  <input id="pkgSearch" placeholder="Search packages…" style="width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:.5rem .7rem;font:inherit;margin-bottom:.4rem">
+  <div class="svc-scroll"><table id="pkgTable"><tr><th>Name</th><th>Version</th></tr>
+  
+  </table></div>
+  <script>(function(){var s=document.getElementById('pkgSearch'),t=document.getElementById('pkgTable');if(!s||!t)return;
+    s.addEventListener('input',function(){var q=s.value.toLowerCase();Array.prototype.slice.call(t.rows,1).forEach(function(r){
+      r.style.display=r.cells[0].textContent.toLowerCase().indexOf(q)>=0?'':'none';});});})();</script>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-  const D = {"labels":["20:48","20:49","20:50","20:51","20:52","20:53","20:54","20:55","20:56","20:57","20:58","20:59","21:00","21:01","21:02","21:03","21:04","21:05","21:06","21:07","21:08","21:09","21:10","21:11","21:12","21:13","21:14","21:15","21:16","21:17","21:18","21:19","21:20","21:21","21:22","21:23","21:24","21:25","21:26","21:27"],"cpu":[72.2,69.9,66.4,61.9,57.3,53.2,50.5,49.7,51.2,54.8,59.8,65.6,71.1,75.4,77.9,78.1,76.2,72.7,68.2,63.5,59.5,56.7,55.2,55.1,56.1,57.8,59.6,61.2,62.5,63.5,64.4,65.3,66.5,68.1,69.9,71.6,72.8,72.9,71.7,69],"mem":[93.4,92.7,92,91.4,90.8,90.2,89.7,89.2,88.9,88.7,88.5,88.5,88.6,88.8,89.1,89.5,89.9,90.5,91.1,91.7,92.4,93.1,93.7,94.3,94.9,95.4,95.8,96.1,96.4,96.5,96.5,96.4,96.2,95.9,95.5,95,94.4,93.8,93.2,92.5],"disk":[81.4,81.4,81.5,81.5,81.6,81.6,81.7,81.7,81.8,81.8,81.9,81.9,82,82,82.1,82.1,82.2,82.2,82.3,82.3,82.4,82.4,82.5,82.5,82.6,82.6,82.7,82.7,82.8,82.8,82.9,82.9,83,83,83.1,83.1,83.2,83.2,83.3,83.3]};
+  const D = {"labels":["21:31","21:32","21:33","21:34","21:35","21:36","21:37","21:38","21:39","21:40","21:41","21:42","21:43","21:44","21:45","21:46","21:47","21:48","21:49","21:50","21:51","21:52","21:53","21:54","21:55","21:56","21:57","21:58","21:59","22:00","22:01","22:02","22:03","22:04","22:05","22:06","22:07","22:08","22:09","22:10"],"cpu":[72.2,69.9,66.4,61.9,57.3,53.2,50.5,49.7,51.2,54.8,59.8,65.6,71.1,75.4,77.9,78.1,76.2,72.7,68.2,63.5,59.5,56.7,55.2,55.1,56.1,57.8,59.6,61.2,62.5,63.5,64.4,65.3,66.5,68.1,69.9,71.6,72.8,72.9,71.7,69],"mem":[93.4,92.7,92,91.4,90.8,90.2,89.7,89.2,88.9,88.7,88.5,88.5,88.6,88.8,89.1,89.5,89.9,90.5,91.1,91.7,92.4,93.1,93.7,94.3,94.9,95.4,95.8,96.1,96.4,96.5,96.5,96.4,96.2,95.9,95.5,95,94.4,93.8,93.2,92.5],"disk":[81.4,81.4,81.5,81.5,81.6,81.6,81.7,81.7,81.8,81.8,81.9,81.9,82,82,82.1,82.1,82.2,82.2,82.3,82.3,82.4,82.4,82.5,82.5,82.6,82.6,82.7,82.7,82.8,82.8,82.9,82.9,83,83,83.1,83.1,83.2,83.2,83.3,83.3]};
   if (window.Chart && document.getElementById('perf') && D.labels.length) {
     new Chart(document.getElementById('perf'), {
       type: 'line',

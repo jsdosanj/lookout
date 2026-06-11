@@ -9,12 +9,15 @@ package main
 import (
 	"log"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/jsdosanj/lookout/internal/collect"
 	"github.com/jsdosanj/lookout/internal/server"
 	"github.com/jsdosanj/lookout/internal/store"
 )
+
+func itoa(n int) string { return strconv.Itoa(n) }
 
 func main() {
 	now := time.Now().UTC()
@@ -42,8 +45,20 @@ func main() {
 	}
 
 	// Most servers encrypted; one left unencrypted for realism.
-	for _, s := range servers {
+	procNames := []string{"nginx", "postgres", "node", "redis-server", "python3", "sshd", "containerd"}
+	for i, s := range servers {
 		s.LastReport.Host.Encryption = "on"
+		s.LastReport.Specs.Network = []collect.NetInterface{
+			{Name: "eth0", IPv4: "10.0.1." + itoa(20+i), MAC: "02:42:ac:11:00:" + itoa(20+i)},
+			{Name: "eth1", IPv4: "172.16.0." + itoa(5+i)},
+		}
+		base := s.LastReport.Specs.CPUPercent
+		for j := 0; j < 5; j++ {
+			s.LastReport.Specs.Processes = append(s.LastReport.Specs.Processes, collect.Process{
+				PID: 1000 + i*10 + j, Name: procNames[(i+j)%len(procNames)],
+				CPUPct: clamp(base/float64(j+1) + float64(j)), MemPct: clamp(float64(20 - j*3)),
+			})
+		}
 	}
 	servers[2].LastReport.Host.Encryption = "off" // app-02
 

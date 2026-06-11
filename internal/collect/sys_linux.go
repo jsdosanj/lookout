@@ -52,6 +52,7 @@ func collectSpecs() (Specs, error) {
 		}
 	}
 	s.Disks = unixDisks()
+	s.Processes = collectProcesses()
 	return s, nil
 }
 

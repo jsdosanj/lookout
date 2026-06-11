@@ -2,9 +2,38 @@ package collect
 
 import (
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 )
+
+// parseProcesses parses `ps -axo pid=,pcpu=,pmem=,comm=` and returns the 10
+// busiest processes by CPU.
+func parseProcesses(out string) []Process {
+	var ps []Process
+	for _, line := range strings.Split(out, "\n") {
+		f := strings.Fields(line)
+		if len(f) < 4 {
+			continue
+		}
+		pid, e1 := strconv.Atoi(f[0])
+		cpu, e2 := strconv.ParseFloat(f[1], 64)
+		mem, e3 := strconv.ParseFloat(f[2], 64)
+		if e1 != nil || e2 != nil || e3 != nil {
+			continue
+		}
+		name := strings.Join(f[3:], " ")
+		if i := strings.LastIndexByte(name, '/'); i >= 0 {
+			name = name[i+1:]
+		}
+		ps = append(ps, Process{PID: pid, Name: name, CPUPct: round1(cpu), MemPct: round1(mem)})
+	}
+	sort.Slice(ps, func(i, j int) bool { return ps[i].CPUPct > ps[j].CPUPct })
+	if len(ps) > 10 {
+		ps = ps[:10]
+	}
+	return ps
+}
 
 // parseProcStatCPU sums the aggregate "cpu " line from /proc/stat into idle
 // (idle + iowait) and total jiffies. Sample it twice to get a utilization %.
