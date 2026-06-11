@@ -51,6 +51,7 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("GET /server/{id}", view(s.handleDetail))
 	mux.Handle("GET /guides", view(s.handleGuides))
 	mux.Handle("GET /integrations", view(s.handleIntegrations))
+	mux.Handle("GET /integrations/{id}", view(s.handleIntegrationDetail))
 	mux.Handle("GET /notifications", view(s.handleNotifications))
 	mux.Handle("GET /settings", view(s.handleSettings))
 	mux.Handle("GET /{$}", view(s.handleDashboard))
