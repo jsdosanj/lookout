@@ -22,6 +22,8 @@ type dashView struct {
 	Total                        int
 	EncryptedCount               int
 	OSDistJSON                   template.JS
+	Active                       string
+	Chrome                       bool // render the side panel (off for the static demo)
 	UserEmail                    string
 	CanManageUsers               bool
 }
@@ -44,6 +46,8 @@ type cardView struct {
 
 type detailView struct {
 	ID, BackHref                             string
+	Active                                   string
+	Chrome                                   bool
 	UserEmail                                string
 	CanManageUsers                           bool
 	OS, Platform, Version, Kernel, Arch, CPU string
@@ -77,6 +81,7 @@ type diskView struct {
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	dv := buildDashView(s.store.List(), time.Now().UTC(), false)
+	dv.Active = "overview"
 	if u := auth.CurrentUser(r); u != nil {
 		dv.UserEmail = u.Email
 		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
@@ -91,6 +96,7 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dv := buildDetailView(srv, time.Now().UTC(), false)
+	dv.Active = "overview"
 	if u := auth.CurrentUser(r); u != nil {
 		dv.UserEmail = u.Email
 		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
@@ -102,6 +108,7 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 
 func buildDashView(servers []*store.Server, now time.Time, static bool) dashView {
 	var d dashView
+	d.Chrome = !static
 	osCount := map[string]int{}
 	for _, srv := range servers {
 		h := store.Evaluate(srv, now)
@@ -184,6 +191,7 @@ func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
 	dv := detailView{
 		ID:          srv.ID,
 		BackHref:    back,
+		Chrome:      !static,
 		OS:          rep.Host.OS,
 		Platform:    rep.Host.Platform,
 		Version:     rep.Host.Version,
