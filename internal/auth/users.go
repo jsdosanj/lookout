@@ -64,6 +64,9 @@ type User struct {
 	Email        string    `json:"email"`
 	Name         string    `json:"name,omitempty"`
 	Role         Role      `json:"role"`
+	DepartmentID string    `json:"department_id,omitempty"`
+	LocationID   string    `json:"location_id,omitempty"`
+	GroupIDs     []string  `json:"group_ids,omitempty"`
 	PasswordHash string    `json:"password_hash,omitempty"` // bcrypt; empty for SSO-only
 	TOTPSecret   string    `json:"totp_secret,omitempty"`   // base32; empty until MFA set up
 	MFAEnabled   bool      `json:"mfa_enabled"`
@@ -72,22 +75,24 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// Store is a concurrency-safe, file-backed set of users + sessions.
+// Store is a concurrency-safe, file-backed set of users, sessions and org units.
 type Store struct {
 	mu       sync.RWMutex
 	path     string
 	users    map[string]*User    // by ID
 	sessions map[string]*Session // by token
+	orgUnits map[string]*OrgUnit // by ID (groups, departments, locations)
 }
 
 type persisted struct {
 	Users    []*User    `json:"users"`
 	Sessions []*Session `json:"sessions"`
+	OrgUnits []*OrgUnit `json:"org_units,omitempty"`
 }
 
 // Open loads the auth store from path, or starts empty.
 func Open(path string) (*Store, error) {
-	s := &Store{path: path, users: map[string]*User{}, sessions: map[string]*Session{}}
+	s := &Store{path: path, users: map[string]*User{}, sessions: map[string]*Session{}, orgUnits: map[string]*OrgUnit{}}
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -104,6 +109,9 @@ func Open(path string) (*Store, error) {
 	}
 	for _, sess := range p.Sessions {
 		s.sessions[sess.Token] = sess
+	}
+	for _, o := range p.OrgUnits {
+		s.orgUnits[o.ID] = o
 	}
 	return s, nil
 }
@@ -224,6 +232,9 @@ func (s *Store) persist() error {
 	}
 	for _, sess := range s.sessions {
 		p.Sessions = append(p.Sessions, sess)
+	}
+	for _, o := range s.orgUnits {
+		p.OrgUnits = append(p.OrgUnits, o)
 	}
 	b, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {

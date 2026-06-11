@@ -20,10 +20,15 @@ func (a *Auth) Mount(mux *http.ServeMux) {
 	mux.Handle("POST /account/mfa/enable", a.RequireAuth(http.HandlerFunc(a.mfaEnable)))
 	mux.Handle("POST /account/mfa/disable", a.RequireAuth(http.HandlerFunc(a.mfaDisable)))
 
-	mux.Handle("GET /admin/users", a.RequirePermission(PermManageUsers, http.HandlerFunc(a.usersPage)))
-	mux.Handle("POST /admin/users/create", a.RequirePermission(PermManageUsers, http.HandlerFunc(a.userCreate)))
-	mux.Handle("POST /admin/users/role", a.RequirePermission(PermManageUsers, http.HandlerFunc(a.userRole)))
-	mux.Handle("POST /admin/users/disable", a.RequirePermission(PermManageUsers, http.HandlerFunc(a.userDisable)))
+	admin := func(h http.HandlerFunc) http.Handler { return a.RequirePermission(PermManageUsers, h) }
+	mux.Handle("GET /admin/users", admin(a.usersPage))
+	mux.Handle("POST /admin/users/create", admin(a.userCreate))
+	mux.Handle("POST /admin/users/role", admin(a.userRole))
+	mux.Handle("POST /admin/users/disable", admin(a.userDisable))
+	mux.Handle("POST /admin/users/org", admin(a.userOrg))
+	mux.Handle("GET /admin/org/{kind}", admin(a.orgPage))
+	mux.Handle("POST /admin/org/{kind}/create", admin(a.orgCreate))
+	mux.Handle("POST /admin/org/{kind}/delete", admin(a.orgDelete))
 
 	mux.HandleFunc("GET /auth/{provider}/login", a.oauthLogin)
 	mux.HandleFunc("GET /auth/{provider}/callback", a.oauthCallback)
@@ -134,11 +139,71 @@ func (a *Auth) mfaDisable(w http.ResponseWriter, r *http.Request) {
 
 func (a *Auth) usersPage(w http.ResponseWriter, r *http.Request) {
 	render(w, usersTmpl, map[string]any{
-		"Me":    CurrentUser(r),
-		"Users": a.store.ListUsers(),
-		"Roles": []Role{RoleOwner, RoleAdmin, RoleOperator, RoleViewer},
-		"Err":   r.URL.Query().Get("err"),
+		"Me":          CurrentUser(r),
+		"Users":       a.store.ListUsers(),
+		"Roles":       []Role{RoleOwner, RoleAdmin, RoleOperator, RoleViewer},
+		"Departments": a.store.ListOrgUnits("department"),
+		"Locations":   a.store.ListOrgUnits("location"),
+		"Groups":      a.store.ListOrgUnits("group"),
+		"Err":         r.URL.Query().Get("err"),
 	})
+}
+
+func (a *Auth) userOrg(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	_ = a.store.SetUserOrg(r.FormValue("id"), r.FormValue("department"), r.FormValue("location"), r.Form["groups"])
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+// ── admin: groups / departments / locations ─────────────────────────────────
+
+func kindTitle(kind string) string {
+	switch kind {
+	case "group":
+		return "Groups"
+	case "department":
+		return "Departments"
+	case "location":
+		return "Locations & buildings"
+	}
+	return kind
+}
+
+func kindDetailLabel(kind string) string {
+	if kind == "location" {
+		return "Address"
+	}
+	return "Description"
+}
+
+func (a *Auth) orgPage(w http.ResponseWriter, r *http.Request) {
+	kind := r.PathValue("kind")
+	if !ValidKind(kind) {
+		http.NotFound(w, r)
+		return
+	}
+	render(w, orgTmpl, map[string]any{
+		"Kind":        kind,
+		"Title":       kindTitle(kind),
+		"DetailLabel": kindDetailLabel(kind),
+		"Units":       a.store.ListOrgUnits(kind),
+		"Err":         r.URL.Query().Get("err"),
+	})
+}
+
+func (a *Auth) orgCreate(w http.ResponseWriter, r *http.Request) {
+	kind := r.PathValue("kind")
+	if _, err := a.store.CreateOrgUnit(kind, r.FormValue("name"), r.FormValue("detail")); err != nil {
+		http.Redirect(w, r, "/admin/org/"+kind+"?err="+url.QueryEscape(err.Error()), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/org/"+kind, http.StatusSeeOther)
+}
+
+func (a *Auth) orgDelete(w http.ResponseWriter, r *http.Request) {
+	kind := r.PathValue("kind")
+	_ = a.store.DeleteOrgUnit(r.FormValue("id"))
+	http.Redirect(w, r, "/admin/org/"+kind, http.StatusSeeOther)
 }
 
 func (a *Auth) userCreate(w http.ResponseWriter, r *http.Request) {

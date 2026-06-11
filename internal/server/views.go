@@ -26,6 +26,7 @@ type dashView struct {
 	Active                       string
 	Chrome                       bool // render the side panel (off for the static demo)
 	UserEmail                    string
+	UserRole                     string
 	CanManageUsers               bool
 }
 
@@ -50,6 +51,7 @@ type detailView struct {
 	Active                                   string
 	Chrome                                   bool
 	UserEmail                                string
+	UserRole                                 string
 	CanManageUsers                           bool
 	OS, Platform, Version, Kernel, Arch, CPU string
 	Virtualization, Encryption               string
@@ -88,6 +90,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	dv.Active = "overview"
 	if u := auth.CurrentUser(r); u != nil {
 		dv.UserEmail = u.Email
+		dv.UserRole = string(u.Role)
 		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
 	}
 	render(w, dashboardTmpl, dv)
@@ -103,6 +106,7 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 	dv.Active = "overview"
 	if u := auth.CurrentUser(r); u != nil {
 		dv.UserEmail = u.Email
+		dv.UserRole = string(u.Role)
 		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
 	}
 	render(w, detailTmpl, dv)
