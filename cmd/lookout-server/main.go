@@ -7,9 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jsdosanj/lookout/internal/auth"
+	"github.com/jsdosanj/lookout/internal/notify"
 	"github.com/jsdosanj/lookout/internal/server"
 	"github.com/jsdosanj/lookout/internal/store"
 )
@@ -34,9 +36,18 @@ func main() {
 	bootstrapOwner(users)
 
 	a := auth.New(users, secureCookies, "Lookout")
+	// Alert webhooks (Slack/Teams/generic) from LOOKOUT_ALERT_WEBHOOKS (comma-separated).
+	var webhooks []string
+	for _, u := range strings.Split(os.Getenv("LOOKOUT_ALERT_WEBHOOKS"), ",") {
+		if u = strings.TrimSpace(u); u != "" {
+			webhooks = append(webhooks, u)
+		}
+	}
+	n := notify.New(webhooks)
+
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           server.New(st, token, a).Routes(),
+		Handler:           server.New(st, token, a, n).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

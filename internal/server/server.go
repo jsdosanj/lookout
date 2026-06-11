@@ -10,20 +10,22 @@ import (
 
 	"github.com/jsdosanj/lookout/internal/auth"
 	"github.com/jsdosanj/lookout/internal/collect"
+	"github.com/jsdosanj/lookout/internal/notify"
 	"github.com/jsdosanj/lookout/internal/store"
 )
 
 // Server wires the HTTP handlers to the store.
 type Server struct {
-	store *store.Store
-	token string       // shared agent enrollment token
-	auth  *auth.Auth   // user auth; nil disables login (dev only)
+	store    *store.Store
+	token    string           // shared agent enrollment token
+	auth     *auth.Auth       // user auth; nil disables login (dev only)
+	notifier *notify.Notifier // alert delivery (webhook/Slack/Teams); may be nil
 }
 
 // New creates a control-plane server. token authenticates agents; a authenticates
-// dashboard users (pass nil only for a no-login dev mode).
-func New(st *store.Store, token string, a *auth.Auth) *Server {
-	return &Server{store: st, token: token, auth: a}
+// dashboard users (pass nil for no-login dev mode); n delivers alerts (may be nil).
+func New(st *store.Store, token string, a *auth.Auth, n *notify.Notifier) *Server {
+	return &Server{store: st, token: token, auth: a, notifier: n}
 }
 
 // Routes returns the HTTP handler for the control plane.
@@ -71,11 +73,38 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing host.hostname", http.StatusBadRequest)
 		return
 	}
+	// Capture the previous health so we can alert if this report makes it worse.
+	now := time.Now().UTC()
+	var prev string
+	if old, ok := s.store.Get(rep.Host.Hostname); ok {
+		prev = store.Evaluate(old, now).Status
+	}
 	if err := s.store.Save(&rep); err != nil {
 		http.Error(w, "store error", http.StatusInternalServerError)
 		return
 	}
+	s.maybeAlert(rep.Host.Hostname, prev, now)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// maybeAlert fires a notification when a server's health worsens into a
+// warning/critical state on this report.
+func (s *Server) maybeAlert(id, prev string, now time.Time) {
+	if !s.notifier.Enabled() {
+		return
+	}
+	srv, ok := s.store.Get(id)
+	if !ok {
+		return
+	}
+	h := store.Evaluate(srv, now)
+	if store.WorseThan(h.Status, prev) && (h.Status == "warning" || h.Status == "critical") {
+		reason := ""
+		if len(h.Reasons) > 0 {
+			reason = h.Reasons[0]
+		}
+		s.notifier.Notify(notify.Event{Server: id, OldStatus: prev, NewStatus: h.Status, Reason: reason})
+	}
 }
 
 // authOK checks the bearer token in constant time to avoid timing leaks.

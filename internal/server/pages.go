@@ -75,15 +75,15 @@ var integrationsTmpl = mustPage("integrations", "Integrations", `
 
 var notificationsTmpl = mustPage("notifications", "Notifications", `
   <h1>Notifications</h1>
-  <p class="intro">Get told the moment a server drifts out of health. Add a channel below — Slack, Teams, and webhooks just need an incoming-webhook URL; email needs SMTP; SMS needs a provider like Twilio.</p>
+  <p class="intro">Lookout alerts you the moment a server's health worsens into <b>warning</b> or <b>critical</b>. Slack, Teams, and generic webhooks work today — point them at an incoming-webhook URL.</p>
   <div class="cards">
-    <div class="icard"><span class="tag soon">Add webhook URL</span><h4>Slack</h4><p>Post alerts to a Slack channel via an incoming webhook.</p></div>
-    <div class="icard"><span class="tag soon">Add webhook URL</span><h4>Microsoft Teams</h4><p>Post alerts to a Teams channel via an incoming webhook.</p></div>
-    <div class="icard"><span class="tag soon">Add URL</span><h4>Webhook</h4><p>POST every alert as JSON to any endpoint (PagerDuty, Opsgenie, your own handler).</p></div>
-    <div class="icard"><span class="tag soon">Configure SMTP</span><h4>Email</h4><p>Email a plain-English summary of what changed and what to do.</p></div>
-    <div class="icard"><span class="tag soon">Configure provider</span><h4>SMS / Text</h4><p>Text the on-call person on critical alerts (via Twilio or similar).</p></div>
+    <div class="icard"><span class="tag live">Live</span><h4>Slack</h4><p>Post alerts to a Slack channel via an incoming webhook.</p></div>
+    <div class="icard"><span class="tag live">Live</span><h4>Microsoft Teams</h4><p>Post alerts to a Teams channel via an incoming webhook.</p></div>
+    <div class="icard"><span class="tag live">Live</span><h4>Webhook</h4><p>POST every alert as JSON to any endpoint (PagerDuty, Opsgenie, your own handler).</p></div>
+    <div class="icard"><span class="tag soon">Configure SMTP</span><h4>Email</h4><p>Email a plain-English summary — needs an SMTP server (on the roadmap).</p></div>
+    <div class="icard"><span class="tag soon">Configure provider</span><h4>SMS / Text</h4><p>Text the on-call person on critical alerts — needs a provider like Twilio (on the roadmap).</p></div>
   </div>
-  <p class="intro" style="margin-top:1.2rem">The alerting engine that drives these is on the roadmap; the dashboard computes health today.</p>`)
+  <div class="guide" style="margin-top:1.2rem"><h4>Enable webhook alerts</h4><p>Set the control plane's <code>LOOKOUT_ALERT_WEBHOOKS</code> environment variable to one or more incoming-webhook URLs (comma-separated). Slack and Teams both accept the message format Lookout sends. A per-channel settings UI is the next step.</p></div>`)
 
 var settingsTmpl = mustPage("settings", "Settings", `
   <h1>Settings</h1>
