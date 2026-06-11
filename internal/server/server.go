@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jsdosanj/servmonitor/internal/collect"
-	"github.com/jsdosanj/servmonitor/internal/store"
+	"github.com/jsdosanj/lookout/internal/collect"
+	"github.com/jsdosanj/lookout/internal/store"
 )
 
 // Server wires the HTTP handlers to the store.

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jsdosanj/servmonitor/internal/collect"
+	"github.com/jsdosanj/lookout/internal/collect"
 )
 
 // Config controls how the agent reports.

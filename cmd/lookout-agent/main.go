@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jsdosanj/servmonitor/internal/agent"
-	"github.com/jsdosanj/servmonitor/internal/collect"
+	"github.com/jsdosanj/lookout/internal/agent"
+	"github.com/jsdosanj/lookout/internal/collect"
 )
 
 // version is overridden at build time with -ldflags "-X main.version=...".

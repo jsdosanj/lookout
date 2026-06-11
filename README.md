@@ -2,8 +2,6 @@
 
 **Open-source IT infrastructure monitoring — built for humans, not just sysadmins.**
 
-> Working repo name is `servmonitor`; the product is being rebranded to **Lookout**.
-
 Lookout watches your servers (Ubuntu, Debian, RHEL, Rocky, CentOS, AlmaLinux,
 Windows, macOS) and tells you, in plain English, whether they're healthy — and
 warns you *before* something breaks. You install a small **agent** on each server;

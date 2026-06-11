@@ -1,4 +1,4 @@
-# servmonitor — Implementation Plan (draft v0.1)
+# Lookout — Implementation Plan (draft v0.1)
 
 > Status: **proposal for review.** This plan surfaces the architecture decisions and a
 > phased roadmap. Several forks need your sign-off before we write the corresponding code
@@ -39,7 +39,7 @@ genuinely achievable and document exactly what we did:
    process, not a property of code. We will *align* the architecture and controls with these
    frameworks and produce the evidence (data-flow docs, access controls, audit logs, encryption,
    retention, DPA) so an auditor can certify you. We won't claim certification we don't hold.
-   (Nice loop: **Sightline** can assess servmonitor's own posture — dogfooding.)
+   (Nice loop: **Sightline** can assess Lookout's own posture — dogfooding.)
 3. **"Top of every search engine for every search."** We'll do strong technical + content SEO
    (fast static site, structured data, sitemaps, great docs, target keywords). Actual rankings
    depend on competition, backlinks, domain authority, and time — no one can guarantee #1.
@@ -142,9 +142,9 @@ permissions, enforce MFA; immutable audit log; tenant isolation for the hosted o
 plain-English docs, self-host vs hosted pricing, SEO (sitemap, structured data, performance).
 → verify: Lighthouse SEO/perf ≥ 95; docs cover install→alerting end-to-end.
 
-**Phase 7 — Sightline integration.** servmonitor feeds asset/inventory/posture signals into
+**Phase 7 — Sightline integration.** Lookout feeds asset/inventory/posture signals into
 Sightline as evidence (e.g., disk encryption, patch status, running services → control checks).
-→ verify: a servmonitor-sourced finding appears in a Sightline assessment.
+→ verify: a Lookout-sourced finding appears in a Sightline assessment.
 
 **Phase 8 — Hardening & compliance evidence.** Threat model, pen-test pass, SBOM, dependency
 scanning, the NIST/HIPAA/SOC2/GDPR control-mapping + evidence pack.
@@ -168,9 +168,9 @@ rewrite.*
 
 ## 7. Sightline integration
 
-servmonitor already collects exactly the evidence Sightline needs (devices, OS, patch status,
+Lookout already collects exactly the evidence Sightline needs (devices, OS, patch status,
 encryption, running services, accounts). We expose a read-only connector so Sightline ingests
-servmonitor inventory/posture as control evidence — turning live monitoring into compliance
+Lookout inventory/posture as control evidence — turning live monitoring into compliance
 signal. (Direction confirmed in Phase 7; thin connector, not a coupling.)
 
 ## 8. Website, pricing, SEO (high level)
@@ -200,7 +200,7 @@ signal. (Direction confirmed in Phase 7; thin connector, not a coupling.)
 
 ## 10. Name options (rebrand candidates)
 
-Working name `servmonitor` is descriptive but generic. Stronger options (verify domain +
+Working name `Lookout` is descriptive but generic. Stronger options (verify domain +
 trademark before committing):
 
 - **Sentry Grid / SentryGrid** — watchful, infrastructure-wide. (Note: "Sentry" collides with

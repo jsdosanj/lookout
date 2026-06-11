@@ -10,9 +10,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/jsdosanj/servmonitor/internal/collect"
-	"github.com/jsdosanj/servmonitor/internal/server"
-	"github.com/jsdosanj/servmonitor/internal/store"
+	"github.com/jsdosanj/lookout/internal/collect"
+	"github.com/jsdosanj/lookout/internal/server"
+	"github.com/jsdosanj/lookout/internal/store"
 )
 
 func main() {

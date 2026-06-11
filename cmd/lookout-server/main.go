@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/jsdosanj/servmonitor/internal/server"
-	"github.com/jsdosanj/servmonitor/internal/store"
+	"github.com/jsdosanj/lookout/internal/server"
+	"github.com/jsdosanj/lookout/internal/store"
 )
 
 func main() {

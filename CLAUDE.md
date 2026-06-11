@@ -62,7 +62,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-## Project-specific (servmonitor)
+## Project-specific (Lookout)
 
 - **What this is:** a self-hostable IT-infrastructure monitoring platform (agents + control plane + dashboard) in the spirit of Nagios, with a paid managed-hosting option. See `IMPLEMENTATION_PLAN.md`.
 - **Security is a first-class requirement, not a feature.** Agents are outbound-only (no inbound ports on monitored hosts). Least privilege everywhere. No secrets in code or logs. Validate/sanitize all agent input server-side. Every dependency is pinned and scanned.

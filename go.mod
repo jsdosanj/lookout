@@ -1,3 +1,3 @@
-module github.com/jsdosanj/servmonitor
+module github.com/jsdosanj/lookout
 
 go 1.26
