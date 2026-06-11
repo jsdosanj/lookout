@@ -47,6 +47,10 @@ func (s *Server) Routes() http.Handler {
 	view := func(h http.HandlerFunc) http.Handler { return s.auth.RequirePermission(auth.PermViewDashboard, h) }
 	mux.Handle("GET /api/v1/servers", view(s.handleListJSON))
 	mux.Handle("GET /server/{id}", view(s.handleDetail))
+	mux.Handle("GET /guides", view(s.handleGuides))
+	mux.Handle("GET /integrations", view(s.handleIntegrations))
+	mux.Handle("GET /notifications", view(s.handleNotifications))
+	mux.Handle("GET /settings", view(s.handleSettings))
 	mux.Handle("GET /{$}", view(s.handleDashboard))
 	return mux
 }

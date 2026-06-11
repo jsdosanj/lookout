@@ -72,6 +72,29 @@ tr:last-child td{border-bottom:none}
 .svc-scroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:.3rem}
 .svc-scroll table{border:none}
 footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
+/* side-panel app shell */
+.app{display:flex;min-height:100vh}
+.side{width:230px;flex:0 0 230px;border-right:1px solid var(--line);padding:1.2rem 1rem;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;background:var(--panel)}
+.brand{font-weight:800;font-size:1.25rem;color:var(--ink);padding:.2rem .5rem}.brand b{color:var(--brand)}
+.sidenav{display:flex;flex-direction:column;gap:.15rem;margin-top:1.3rem}
+.sidenav a{padding:.5rem .7rem;border-radius:8px;color:var(--muted);font-weight:600;font-size:.92rem}
+.sidenav a:hover{color:var(--ink);background:rgba(127,127,140,.1)}
+.sidenav a.on{background:rgba(99,102,241,.16);color:var(--ink)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:.5rem;font-size:.85rem;border-top:1px solid var(--line);padding-top:.9rem}
+.side-foot a{color:var(--muted)}.side-foot a:hover{color:var(--ink)}
+.content{flex:1;min-width:0;padding:1.6rem 2rem;max-width:1180px}
+.intro{color:var(--muted);max-width:680px;margin:.2rem 0 1.4rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.icard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.1rem}
+.icard h4{margin:.1rem 0 .3rem}
+.icard p{color:var(--muted);font-size:.88rem;margin:0 0 .8rem}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:999px}
+.tag.soon{background:rgba(245,158,11,.15);color:var(--warn)}
+.tag.live{background:rgba(34,197,94,.15);color:var(--ok)}
+.guide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:.9rem}
+.guide h4{margin:0 0 .3rem}.guide p{color:var(--muted);margin:0;font-size:.92rem}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.9rem 1.1rem;margin-bottom:.6rem;max-width:520px}
+@media(max-width:820px){.app{flex-direction:column}.side{width:auto;flex:none;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:.4rem}.sidenav{flex-direction:row;flex-wrap:wrap;margin:0}.side-foot{margin:0 0 0 auto;flex-direction:row;border:none;padding:0}.content{padding:1.2rem}}
 `
 
 const headOpen = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`
@@ -80,9 +103,6 @@ const styleTag = `<style>` + cssConst + `</style></head><body>` +
 	`(function(){try{if(localStorage.getItem('lk-theme')==='light')document.body.classList.add('light')}catch(e){}})();</script>`
 
 const dashBody = `
-<header class="top"><div class="logo">Look<b>out</b></div>
-  <div class="topnav"><button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">◑ Theme</button>{{if .UserEmail}}{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form>{{else}}<span class="sub">Control plane</span>{{end}}</div>
-</header>
 <div class="wrap">
   <div class="summary">
     <span class="chip"><b>{{.Total}}</b> servers</span>
@@ -92,9 +112,9 @@ const dashBody = `
     <span class="chip"><span class="dot d-stale"></span><b>{{.Stale}}</b> stale</span>
   </div>
   {{if .Servers}}
-  <div class="overview-row">
-    <div class="panel"><h3 class="panel-h">Operating systems</h3><canvas id="osChart" height="150"></canvas></div>
-    <div class="panel enc"><h3 class="panel-h">Disk encryption</h3><div class="enc-big">{{.EncryptedCount}}/{{.Total}}</div><p class="sub">servers with FileVault / BitLocker / LUKS enabled</p></div>
+  <div class="overview-row" id="overviewRow">
+    <div class="panel" id="panel-os"><h3 class="panel-h">Operating systems</h3><canvas id="osChart" height="150"></canvas></div>
+    <div class="panel enc" id="panel-enc"><h3 class="panel-h">Disk encryption</h3><div class="enc-big">{{.EncryptedCount}}/{{.Total}}</div><p class="sub">servers with FileVault / BitLocker / LUKS enabled</p></div>
   </div>
   <div class="grid">
     {{range .Servers}}
@@ -120,7 +140,6 @@ const dashBody = `
     <code>lookout-agent run --server http://THIS_HOST:8080 --token YOUR_TOKEN</code></div>
   {{end}}
 </div>
-<footer>Lookout &middot; open-source infrastructure monitoring</footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
   const OS = {{.OSDistJSON}};
@@ -133,12 +152,17 @@ const dashBody = `
     });
   }
 </script>
-</body></html>`
+<script>
+  (function(){
+    var os = localStorage.getItem('lk-show-os') === '0', enc = localStorage.getItem('lk-show-enc') === '0';
+    if (os) { var a = document.getElementById('panel-os'); if (a) a.style.display = 'none'; }
+    if (enc) { var b = document.getElementById('panel-enc'); if (b) b.style.display = 'none'; }
+    var row = document.getElementById('overviewRow'); if (row && os && enc) row.style.display = 'none';
+  })();
+</script>
+`
 
 const detailBody = `
-<header class="top"><div class="logo">Look<b>out</b></div>
-  <div class="topnav"><button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">◑ Theme</button>{{if .UserEmail}}{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form>{{else}}<span class="sub">Control plane</span>{{end}}</div>
-</header>
 <div class="wrap">
   <a class="back" href="{{.BackHref}}">&larr; All servers</a>
   <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
@@ -178,7 +202,6 @@ const detailBody = `
   {{range .Services}}<tr><td>{{.Name}}</td><td><span class="dot {{if eq .Status "running"}}d-ok{{else}}d-stale{{end}}"></span>{{.Status}}</td></tr>{{end}}
   </table></div>
 </div>
-<footer>Lookout &middot; open-source infrastructure monitoring</footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
   const D = {{.ChartData}};
@@ -197,10 +220,34 @@ const detailBody = `
     });
   }
 </script>
-</body></html>`
+`
 
-var dashboardTmpl = template.Must(template.New("dash").Funcs(funcs).Parse(
-	headOpen + `<title>Dashboard &middot; Lookout</title>` + styleTag + dashBody))
+// shellTop renders the left side panel; every page is wrapped in it. Page data
+// must expose Active, UserEmail and CanManageUsers.
+const shellTop = `<div class="app">
+  {{if .Chrome}}<aside class="side">
+    <a href="/" class="brand">Look<b>out</b></a>
+    <nav class="sidenav">
+      <a href="/" class="{{if eq .Active "overview"}}on{{end}}">&#9638; Overview</a>
+      <a href="/guides" class="{{if eq .Active "guides"}}on{{end}}">&#10067; Help &amp; Guides</a>
+      <a href="/integrations" class="{{if eq .Active "integrations"}}on{{end}}">&#129513; Integrations</a>
+      <a href="/notifications" class="{{if eq .Active "notifications"}}on{{end}}">&#128276; Notifications</a>
+      {{if .CanManageUsers}}<a href="/admin/users" class="{{if eq .Active "users"}}on{{end}}">&#128101; Users</a>{{end}}
+      <a href="/settings" class="{{if eq .Active "settings"}}on{{end}}">&#9881; Settings</a>
+    </nav>
+    <div class="side-foot">
+      <button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">&#9681; Theme</button>
+      {{if .UserEmail}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="margin:0"><button class="linkbtn">Sign out</button></form>{{end}}
+    </div>
+  </aside>{{end}}
+  <main class="content">`
 
-var detailTmpl = template.Must(template.New("detail").Funcs(funcs).Parse(
-	headOpen + `<title>{{.ID}} &middot; Lookout</title>` + styleTag + detailBody))
+const shellBottom = `</main></div></body></html>`
+
+func mustPage(name, title, content string) *template.Template {
+	return template.Must(template.New(name).Funcs(funcs).Parse(
+		headOpen + `<title>` + title + ` &middot; Lookout</title>` + styleTag + shellTop + content + shellBottom))
+}
+
+var dashboardTmpl = mustPage("dash", "Dashboard", dashBody)
+var detailTmpl = mustPage("detail", "{{.ID}}", detailBody)
