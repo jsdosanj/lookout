@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/jsdosanj/lookout/internal/auth"
+	"github.com/jsdosanj/lookout/internal/integrations"
 )
 
 // pageView is the data for the simple content pages (they only need the shell).
@@ -12,6 +13,23 @@ type pageView struct {
 	Chrome         bool
 	UserEmail      string
 	CanManageUsers bool
+}
+
+type intGroup struct {
+	Title string
+	Items []integrations.Integration
+}
+type intView struct {
+	pageView
+	Groups []intGroup
+}
+type notifyView struct {
+	pageView
+	Items []integrations.Integration
+}
+type intDetailView struct {
+	pageView
+	I integrations.Integration
 }
 
 func (s *Server) page(active string, r *http.Request) pageView {
@@ -27,10 +45,28 @@ func (s *Server) handleGuides(w http.ResponseWriter, r *http.Request) {
 	render(w, guidesTmpl, s.page("guides", r))
 }
 func (s *Server) handleIntegrations(w http.ResponseWriter, r *http.Request) {
-	render(w, integrationsTmpl, s.page("integrations", r))
+	var groups []intGroup
+	for _, c := range integrations.Categories {
+		if items := integrations.ByCategory(c.Key); len(items) > 0 {
+			groups = append(groups, intGroup{Title: c.Title, Items: items})
+		}
+	}
+	render(w, integrationsTmpl, intView{pageView: s.page("integrations", r), Groups: groups})
 }
 func (s *Server) handleNotifications(w http.ResponseWriter, r *http.Request) {
-	render(w, notificationsTmpl, s.page("notifications", r))
+	render(w, notificationsTmpl, notifyView{pageView: s.page("notifications", r), Items: integrations.ByCategory(integrations.NotificationCategory)})
+}
+func (s *Server) handleIntegrationDetail(w http.ResponseWriter, r *http.Request) {
+	in, ok := integrations.ByID(r.PathValue("id"))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	active := "integrations"
+	if in.Category == integrations.NotificationCategory {
+		active = "notifications"
+	}
+	render(w, integrationDetailTmpl, intDetailView{pageView: s.page(active, r), I: in})
 }
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	render(w, settingsTmpl, s.page("settings", r))
@@ -52,38 +88,36 @@ var guidesTmpl = mustPage("guides", "Help & Guides", `
 
 var integrationsTmpl = mustPage("integrations", "Integrations", `
   <h1>Integrations</h1>
-  <p class="intro">Connect Lookout to the tools you already run. Each integration needs its own API credentials — add them to enable it. (Wiring is provided; you supply the keys.)</p>
-  <h2>Security posture</h2>
+  <p class="intro">Connect Lookout to the tools you already run. Connectors marked <b>In development</b> are coming soon; click any to see what it does and the credentials it'll need.</p>
+  {{range .Groups}}
+  <h2>{{.Title}}</h2>
   <div class="cards">
-    <div class="icard"><span class="tag soon">Configure</span><h4>Sightline</h4><p>Pull your live security &amp; compliance posture into Lookout — see which servers meet NIST / HIPAA / SOC 2 controls.</p></div>
+    {{range .Items}}
+    <a class="icard" href="/integrations/{{.ID}}"><span class="tag {{.Status.Tag}}">{{.Status.Label}}</span><h4>{{.Name}}</h4><p>{{.Description}}</p></a>
+    {{end}}
   </div>
-  <h2 style="margin-top:1.4rem">Ticketing</h2>
-  <div class="cards">
-    <div class="icard"><span class="tag soon">Configure</span><h4>Jira</h4><p>Open a Jira issue automatically when an alert fires.</p></div>
-    <div class="icard"><span class="tag soon">Configure</span><h4>ServiceNow</h4><p>Create a ServiceNow incident from an alert.</p></div>
-    <div class="icard"><span class="tag soon">Configure</span><h4>Asana</h4><p>File an Asana task for the on-call owner.</p></div>
-    <div class="icard"><span class="tag soon">Configure</span><h4>Trello</h4><p>Add a Trello card to your ops board.</p></div>
-  </div>
-  <h2 style="margin-top:1.4rem">Devices &amp; identity</h2>
-  <div class="cards">
-    <div class="icard"><span class="tag soon">Configure</span><h4>Jamf</h4><p>Enrich macOS hosts with Jamf MDM inventory and compliance.</p></div>
-    <div class="icard"><span class="tag soon">Configure</span><h4>Microsoft Intune</h4><p>Pull device compliance and config from Intune.</p></div>
-    <div class="icard"><span class="tag soon">Configure</span><h4>Kandji</h4><p>Apple device management signals from Kandji.</p></div>
-    <div class="icard"><span class="tag soon">Configure</span><h4>JumpCloud</h4><p>Directory + device posture from JumpCloud.</p></div>
-    <div class="icard"><span class="tag soon">Configure</span><h4>Active Directory</h4><p>Resolve users, groups, and machines from AD (LDAP).</p></div>
-  </div>`)
+  {{end}}`)
 
 var notificationsTmpl = mustPage("notifications", "Notifications", `
   <h1>Notifications</h1>
-  <p class="intro">Lookout alerts you the moment a server's health worsens into <b>warning</b> or <b>critical</b>. Slack, Teams, and generic webhooks work today — point them at an incoming-webhook URL.</p>
+  <p class="intro">Lookout alerts you the moment a server worsens into <b>warning</b> or <b>critical</b>. Slack, Teams, and generic webhooks are live today; email and SMS are in development.</p>
   <div class="cards">
-    <div class="icard"><span class="tag live">Live</span><h4>Slack</h4><p>Post alerts to a Slack channel via an incoming webhook.</p></div>
-    <div class="icard"><span class="tag live">Live</span><h4>Microsoft Teams</h4><p>Post alerts to a Teams channel via an incoming webhook.</p></div>
-    <div class="icard"><span class="tag live">Live</span><h4>Webhook</h4><p>POST every alert as JSON to any endpoint (PagerDuty, Opsgenie, your own handler).</p></div>
-    <div class="icard"><span class="tag soon">Configure SMTP</span><h4>Email</h4><p>Email a plain-English summary — needs an SMTP server (on the roadmap).</p></div>
-    <div class="icard"><span class="tag soon">Configure provider</span><h4>SMS / Text</h4><p>Text the on-call person on critical alerts — needs a provider like Twilio (on the roadmap).</p></div>
+    {{range .Items}}
+    <a class="icard" href="/integrations/{{.ID}}"><span class="tag {{.Status.Tag}}">{{.Status.Label}}</span><h4>{{.Name}}</h4><p>{{.Description}}</p></a>
+    {{end}}
   </div>
-  <div class="guide" style="margin-top:1.2rem"><h4>Enable webhook alerts</h4><p>Set the control plane's <code>LOOKOUT_ALERT_WEBHOOKS</code> environment variable to one or more incoming-webhook URLs (comma-separated). Slack and Teams both accept the message format Lookout sends. A per-channel settings UI is the next step.</p></div>`)
+  <div class="guide" style="margin-top:1.2rem"><h4>Enable webhook alerts (today)</h4><p>Set <code>LOOKOUT_ALERT_WEBHOOKS</code> on the control plane to one or more incoming-webhook URLs (comma-separated). Slack and Teams both accept the format Lookout sends.</p></div>`)
+
+var integrationDetailTmpl = mustPage("integration", "Integration", `
+  <a class="back" href="/{{if eq .I.Category "notifications"}}notifications{{else}}integrations{{end}}">&larr; Back</a>
+  <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap"><h1>{{.I.Name}}</h1><span class="tag {{.I.Status.Tag}}">{{.I.Status.Label}}</span></div>
+  <p class="intro">{{.I.Description}}</p>
+  {{if eq .I.Status.Tag "live"}}
+  <div class="guide"><h4>Enable it</h4><p>{{.I.EnableHint}}</p></div>
+  {{else}}
+  <div class="guide"><h4>Coming soon</h4><p>This connector is in development. When it ships, you'll configure it here with:</p>
+    <ul style="margin:.6rem 0 0 1.2rem;color:var(--muted)">{{range .I.Needs}}<li>{{.}}</li>{{end}}</ul></div>
+  {{end}}`)
 
 var settingsTmpl = mustPage("settings", "Settings", `
   <h1>Settings</h1>
