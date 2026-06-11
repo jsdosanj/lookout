@@ -31,6 +31,9 @@ func collectHost() (Host, error) {
 	if v, err := ps("[int]((Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalSeconds"); err == nil {
 		h.UptimeSeconds, _ = strconv.ParseInt(v, 10, 64)
 	}
+	if v, err := ps("$c=Get-CimInstance Win32_ComputerSystem; \"$($c.Manufacturer) $($c.Model)\""); err == nil {
+		h.Virtualization = winVirt(v)
+	}
 	return h, nil
 }
 
@@ -41,6 +44,9 @@ func collectSpecs() (Specs, error) {
 	}
 	if v, err := ps("(Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors"); err == nil {
 		s.CPUCores, _ = strconv.Atoi(v)
+	}
+	if v, err := ps("(Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average"); err == nil {
+		s.CPUPercent, _ = strconv.ParseFloat(strings.TrimSpace(v), 64)
 	}
 	if v, err := ps("[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1MB)"); err == nil {
 		s.MemTotalMB, _ = strconv.ParseUint(v, 10, 64)

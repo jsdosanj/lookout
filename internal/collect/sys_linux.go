@@ -5,6 +5,7 @@ package collect
 import (
 	"os"
 	"os/exec"
+	"time"
 )
 
 func collectHost() (Host, error) {
@@ -21,6 +22,9 @@ func collectHost() (Host, error) {
 	if k, err := runCmd("uname", "-r"); err == nil {
 		h.Kernel = k
 	}
+	if v, err := runCmd("systemd-detect-virt"); err == nil {
+		h.Virtualization = normVirt(v)
+	}
 	return h, nil
 }
 
@@ -34,6 +38,15 @@ func collectSpecs() (Specs, error) {
 	}
 	if b, err := os.ReadFile("/proc/loadavg"); err == nil {
 		s.LoadAvg = parseLoadAvg(string(b))
+	}
+	// CPU utilization: sample /proc/stat twice over a short window.
+	if b1, err := os.ReadFile("/proc/stat"); err == nil {
+		i1, t1 := parseProcStatCPU(string(b1))
+		time.Sleep(300 * time.Millisecond)
+		if b2, err := os.ReadFile("/proc/stat"); err == nil {
+			i2, t2 := parseProcStatCPU(string(b2))
+			s.CPUPercent = cpuPercentDelta(i1, t1, i2, t2)
+		}
 	}
 	s.Disks = unixDisks()
 	return s, nil

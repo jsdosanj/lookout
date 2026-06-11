@@ -18,6 +18,43 @@ type Server struct {
 	ID         string         `json:"id"` // hostname for the MVP
 	LastSeen   time.Time      `json:"last_seen"`
 	LastReport collect.Report `json:"last_report"`
+	History    []Sample       `json:"history,omitempty"`
+}
+
+// history returns a server's samples, safe to call on a nil *Server (first report).
+func (s *Server) history() []Sample {
+	if s == nil {
+		return nil
+	}
+	return s.History
+}
+
+// Sample is one point in a server's resource-usage time series.
+type Sample struct {
+	At   time.Time `json:"at"`
+	CPU  float64   `json:"cpu"`  // %
+	Mem  float64   `json:"mem"`  // %
+	Disk float64   `json:"disk"` // % (busiest disk)
+}
+
+// maxHistory caps how many samples we keep per server (MVP, in memory + file).
+const maxHistory = 180
+
+// sampleFrom derives a point-in-time sample from a report.
+func sampleFrom(rep *collect.Report, at time.Time) Sample {
+	var memPct, diskPct float64
+	if rep.Specs.MemTotalMB > 0 {
+		memPct = float64(rep.Specs.MemUsedMB) / float64(rep.Specs.MemTotalMB) * 100
+	}
+	for _, d := range rep.Specs.Disks {
+		if d.TotalMB == 0 {
+			continue
+		}
+		if p := float64(d.UsedMB) / float64(d.TotalMB) * 100; p > diskPct {
+			diskPct = p
+		}
+	}
+	return Sample{At: at, CPU: rep.Specs.CPUPercent, Mem: memPct, Disk: diskPct}
 }
 
 // Store is a concurrency-safe, file-backed set of servers.
@@ -55,7 +92,13 @@ func (s *Store) Save(rep *collect.Report) error {
 	if id == "" {
 		id = "unknown"
 	}
-	s.servers[id] = &Server{ID: id, LastSeen: time.Now().UTC(), LastReport: *rep}
+	now := time.Now().UTC()
+	hist := s.servers[id].history() // safe on nil
+	hist = append(hist, sampleFrom(rep, now))
+	if len(hist) > maxHistory {
+		hist = hist[len(hist)-maxHistory:]
+	}
+	s.servers[id] = &Server{ID: id, LastSeen: now, LastReport: *rep, History: hist}
 	return s.persist()
 }
 

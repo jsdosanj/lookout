@@ -111,6 +111,33 @@ func TestParseVMStat(t *testing.T) {
 	}
 }
 
+func TestCPUPercent(t *testing.T) {
+	// +1000 total jiffies between samples, +250 of them idle → 75% busy.
+	stat1 := "cpu  0 0 0 1000 0 0 0 0 0 0\nintr 5"
+	stat2 := "cpu  750 0 0 1250 0 0 0 0 0 0\nintr 9"
+	i1, t1 := parseProcStatCPU(stat1)
+	i2, t2 := parseProcStatCPU(stat2)
+	if got := cpuPercentDelta(i1, t1, i2, t2); got != 75 {
+		t.Errorf("cpu%% = %v, want 75", got)
+	}
+}
+
+func TestParseTopCPU(t *testing.T) {
+	in := "CPU usage: 9.10% user, 5.90% sys, 85.00% idle\nCPU usage: 12.00% user, 3.00% sys, 85.00% idle\n"
+	if got := parseTopCPU(in); got != 15 {
+		t.Errorf("top cpu = %v, want 15", got)
+	}
+}
+
+func TestVirt(t *testing.T) {
+	if normVirt("microsoft") != "hyperv" || normVirt("none") != "" || normVirt("kvm") != "kvm" {
+		t.Error("normVirt mapping wrong")
+	}
+	if winVirt("VMware, Inc. VMware7,1") != "vmware" || winVirt("Microsoft Corporation Virtual Machine") != "hyperv" || winVirt("Dell Inc. PowerEdge") != "physical" {
+		t.Error("winVirt mapping wrong")
+	}
+}
+
 func TestParseWinDisks(t *testing.T) {
 	in := "C:\t107374182400\t53687091200\nD:\t0\t0\n"
 	disks := parseWinDisks(in)

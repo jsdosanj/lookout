@@ -1,9 +1,107 @@
 package collect
 
 import (
+	"math"
 	"strconv"
 	"strings"
 )
+
+// parseProcStatCPU sums the aggregate "cpu " line from /proc/stat into idle
+// (idle + iowait) and total jiffies. Sample it twice to get a utilization %.
+func parseProcStatCPU(content string) (idle, total uint64) {
+	for _, line := range strings.Split(content, "\n") {
+		if !strings.HasPrefix(line, "cpu ") {
+			continue
+		}
+		f := strings.Fields(line)
+		for i := 1; i < len(f); i++ {
+			v, err := strconv.ParseUint(f[i], 10, 64)
+			if err != nil {
+				continue
+			}
+			total += v
+			if i == 4 || i == 5 { // idle, iowait
+				idle += v
+			}
+		}
+		return idle, total
+	}
+	return 0, 0
+}
+
+// cpuPercentDelta turns two /proc/stat samples into a 0–100 utilization %.
+func cpuPercentDelta(idle1, total1, idle2, total2 uint64) float64 {
+	dt := float64(total2) - float64(total1)
+	if dt <= 0 {
+		return 0
+	}
+	return clampPct(round1((1 - (float64(idle2)-float64(idle1))/dt) * 100))
+}
+
+// parseTopCPU reads "CPU usage: 5% user, 3% sys, 92% idle" (macOS `top`) and
+// returns 100 - idle. Uses the last occurrence (the second, settled sample).
+func parseTopCPU(output string) float64 {
+	idx := strings.LastIndex(output, "CPU usage:")
+	if idx < 0 {
+		return 0
+	}
+	line := output[idx:]
+	if nl := strings.IndexByte(line, '\n'); nl >= 0 {
+		line = line[:nl]
+	}
+	toks := strings.Fields(line)
+	for i, t := range toks {
+		if t == "idle" && i > 0 {
+			if v, err := strconv.ParseFloat(strings.TrimSuffix(toks[i-1], "%"), 64); err == nil {
+				return clampPct(round1(100 - v))
+			}
+		}
+	}
+	return 0
+}
+
+// normVirt normalizes systemd-detect-virt output to a friendly label.
+func normVirt(s string) string {
+	switch strings.TrimSpace(s) {
+	case "microsoft":
+		return "hyperv"
+	case "", "none":
+		return ""
+	default:
+		return strings.TrimSpace(s)
+	}
+}
+
+// winVirt classifies a Windows "Manufacturer Model" string into a hypervisor.
+func winVirt(s string) string {
+	l := strings.ToLower(s)
+	switch {
+	case strings.Contains(l, "vmware"):
+		return "vmware"
+	case strings.Contains(l, "virtualbox"):
+		return "virtualbox"
+	case strings.Contains(l, "kvm"), strings.Contains(l, "qemu"):
+		return "kvm"
+	case strings.Contains(l, "xen"):
+		return "xen"
+	case strings.Contains(l, "virtual"), strings.Contains(l, "hyper-v"):
+		return "hyperv"
+	default:
+		return "physical"
+	}
+}
+
+func round1(f float64) float64 { return math.Round(f*10) / 10 }
+
+func clampPct(f float64) float64 {
+	if f < 0 {
+		return 0
+	}
+	if f > 100 {
+		return 100
+	}
+	return f
+}
 
 // All functions here are pure: raw text in, structured data out. No OS calls,
 // so they compile and are unit-tested on every platform.

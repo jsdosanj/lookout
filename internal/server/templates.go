@@ -86,6 +86,8 @@ const dashBody = `
         <span class="pill s-{{.Status}}">{{.Status}}</span>
       </div>
       <div class="sub">{{.CPU}} · {{.Cores}} cores</div>
+      <div class="metric"><span>CPU</span><span>{{.CPUPct}}%</span></div>
+      <div class="bar"><i class="{{barclass .CPUPct}}" style="{{.CPUBar}}"></i></div>
       <div class="metric"><span>Memory</span><span>{{.MemPct}}% · {{.MemUsedMB}}/{{.MemTotalMB}} MB</span></div>
       <div class="bar"><i class="{{barclass .MemPct}}" style="{{.MemBar}}"></i></div>
       <div class="metric"><span>Top disk {{.TopDiskMount}}</span><span>{{.TopDiskPct}}%</span></div>
@@ -115,13 +117,18 @@ const detailBody = `
 
   <h2>Overview</h2>
   <div class="kv">
+    <div class="item"><div class="l">CPU now</div><div class="v">{{.CPUPct}}%</div></div>
     <div class="item"><div class="l">CPU</div><div class="v">{{.CPU}}</div></div>
     <div class="item"><div class="l">Cores</div><div class="v">{{.Cores}}</div></div>
+    {{if .Virtualization}}<div class="item"><div class="l">Platform type</div><div class="v">{{.Virtualization}}</div></div>{{end}}
     <div class="item"><div class="l">Uptime</div><div class="v">{{.Uptime}}</div></div>
     <div class="item"><div class="l">Load average</div><div class="v">{{range .LoadAvg}}{{.}} {{else}}&mdash;{{end}}</div></div>
     <div class="item"><div class="l">Packages</div><div class="v">{{.Packages}}</div></div>
     <div class="item"><div class="l">Last report</div><div class="v">{{.CollectedAt}} ({{.LastSeen}})</div></div>
   </div>
+
+  <h2>Performance (recent)</h2>
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem"><canvas id="perf" height="90"></canvas></div>
 
   <h2>Memory</h2>
   <div class="metric"><span>{{.MemUsedMB}} / {{.MemTotalMB}} MB</span><span>{{.MemPct}}%</span></div>
@@ -139,6 +146,24 @@ const detailBody = `
   </table></div>
 </div>
 <footer>Lookout &middot; open-source infrastructure monitoring</footer>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const D = {{.ChartData}};
+  if (window.Chart && document.getElementById('perf') && D.labels.length) {
+    new Chart(document.getElementById('perf'), {
+      type: 'line',
+      data: { labels: D.labels, datasets: [
+        { label: 'CPU %', data: D.cpu, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.15)', fill: true, tension: .3, pointRadius: 0, borderWidth: 2 },
+        { label: 'Memory %', data: D.mem, borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,.10)', fill: true, tension: .3, pointRadius: 0, borderWidth: 2 },
+        { label: 'Disk %', data: D.disk, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.08)', fill: true, tension: .3, pointRadius: 0, borderWidth: 2 }
+      ]},
+      options: { responsive: true, interaction: { intersect: false, mode: 'index' },
+        scales: { y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#1f2a44' } },
+                  x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { color: '#1f2a44' } } },
+        plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+    });
+  }
+</script>
 </body></html>`
 
 var dashboardTmpl = template.Must(template.New("dash").Funcs(funcs).Parse(

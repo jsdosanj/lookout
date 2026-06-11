@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -24,6 +25,8 @@ type cardView struct {
 	Cores                            int
 	Status                           string
 	Reasons                          []string
+	CPUPct                           int
+	CPUBar                           template.CSS
 	MemPct                           int
 	MemBar                           template.CSS
 	MemUsedMB, MemTotalMB            uint64
@@ -34,21 +37,25 @@ type cardView struct {
 }
 
 type detailView struct {
-	ID, BackHref                                 string
-	OS, Platform, Version, Kernel, Arch, CPU     string
-	Cores                                        int
-	Status                                       string
-	Reasons                                      []string
-	Uptime                                       string
-	MemPct                                       int
-	MemBar                                       template.CSS
-	MemUsedMB, MemTotalMB                        uint64
-	LoadAvg                                      []float64
-	Disks                                        []diskView
-	Services                                     []collect.Service
-	RunningServices                              int
-	Packages                                     int
-	LastSeen, CollectedAt                        string
+	ID, BackHref                             string
+	OS, Platform, Version, Kernel, Arch, CPU string
+	Virtualization                           string
+	Cores                                    int
+	Status                                   string
+	Reasons                                  []string
+	Uptime                                   string
+	CPUPct                                   int
+	CPUBar                                   template.CSS
+	MemPct                                   int
+	MemBar                                   template.CSS
+	MemUsedMB, MemTotalMB                    uint64
+	LoadAvg                                  []float64
+	Disks                                    []diskView
+	Services                                 []collect.Service
+	RunningServices                          int
+	Packages                                 int
+	LastSeen, CollectedAt                    string
+	ChartData                                template.JS
 }
 
 type diskView struct {
@@ -104,12 +111,14 @@ func buildDashView(servers []*store.Server, now time.Time, static bool) dashView
 			Cores:      rep.Specs.CPUCores,
 			Status:     h.Status,
 			Reasons:    h.Reasons,
+			CPUPct:     int(rep.Specs.CPUPercent + 0.5),
 			MemPct:     percent(rep.Specs.MemUsedMB, rep.Specs.MemTotalMB),
 			MemUsedMB:  rep.Specs.MemUsedMB,
 			MemTotalMB: rep.Specs.MemTotalMB,
 			Services:   len(rep.Services),
 			LastSeen:   humanAgo(now.Sub(srv.LastSeen)),
 		}
+		card.CPUBar = barStyle(card.CPUPct)
 		card.MemBar = barStyle(card.MemPct)
 		for _, dk := range rep.Specs.Disks {
 			if p := percent(dk.UsedMB, dk.TotalMB); p >= card.TopDiskPct {
@@ -136,20 +145,24 @@ func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
 		Version:     rep.Host.Version,
 		Kernel:      rep.Host.Kernel,
 		Arch:        rep.Host.Arch,
-		CPU:         rep.Specs.CPUModel,
-		Cores:       rep.Specs.CPUCores,
-		Status:      h.Status,
-		Reasons:     h.Reasons,
-		Uptime:      uptimeHuman(rep.Host.UptimeSeconds),
-		MemPct:      percent(rep.Specs.MemUsedMB, rep.Specs.MemTotalMB),
-		MemUsedMB:   rep.Specs.MemUsedMB,
-		MemTotalMB:  rep.Specs.MemTotalMB,
-		LoadAvg:     rep.Specs.LoadAvg,
-		Packages:    len(rep.Packages),
-		Services:    rep.Services,
-		LastSeen:    humanAgo(now.Sub(srv.LastSeen)),
-		CollectedAt: rep.CollectedAt.Format("2006-01-02 15:04 MST"),
+		CPU:            rep.Specs.CPUModel,
+		Virtualization: rep.Host.Virtualization,
+		Cores:          rep.Specs.CPUCores,
+		Status:         h.Status,
+		Reasons:        h.Reasons,
+		Uptime:         uptimeHuman(rep.Host.UptimeSeconds),
+		CPUPct:         int(rep.Specs.CPUPercent + 0.5),
+		MemPct:         percent(rep.Specs.MemUsedMB, rep.Specs.MemTotalMB),
+		MemUsedMB:      rep.Specs.MemUsedMB,
+		MemTotalMB:     rep.Specs.MemTotalMB,
+		LoadAvg:        rep.Specs.LoadAvg,
+		Packages:       len(rep.Packages),
+		Services:       rep.Services,
+		LastSeen:       humanAgo(now.Sub(srv.LastSeen)),
+		CollectedAt:    rep.CollectedAt.Format("2006-01-02 15:04 MST"),
+		ChartData:      chartJSON(srv.History),
 	}
+	dv.CPUBar = barStyle(dv.CPUPct)
 	dv.MemBar = barStyle(dv.MemPct)
 	for _, dk := range rep.Specs.Disks {
 		p := percent(dk.UsedMB, dk.TotalMB)
@@ -164,6 +177,25 @@ func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+// chartJSON marshals a server's history into a JS object for Chart.js.
+func chartJSON(history []store.Sample) template.JS {
+	type cd struct {
+		Labels []string  `json:"labels"`
+		CPU    []float64 `json:"cpu"`
+		Mem    []float64 `json:"mem"`
+		Disk   []float64 `json:"disk"`
+	}
+	c := cd{Labels: []string{}, CPU: []float64{}, Mem: []float64{}, Disk: []float64{}}
+	for _, s := range history {
+		c.Labels = append(c.Labels, s.At.Local().Format("15:04"))
+		c.CPU = append(c.CPU, s.CPU)
+		c.Mem = append(c.Mem, s.Mem)
+		c.Disk = append(c.Disk, s.Disk)
+	}
+	b, _ := json.Marshal(c)
+	return template.JS(b)
+}
 
 func render(w http.ResponseWriter, t *template.Template, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

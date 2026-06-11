@@ -32,6 +32,11 @@ func collectHost() (Host, error) {
 			h.UptimeSeconds = time.Now().Unix() - sec
 		}
 	}
+	if sysctl("kern.hv_vmm_present") == "1" {
+		h.Virtualization = "vm"
+	} else {
+		h.Virtualization = "physical"
+	}
 	return h, nil
 }
 
@@ -49,6 +54,10 @@ func collectSpecs() (Specs, error) {
 	}
 	// vm.loadavg looks like: "{ 1.50 1.20 1.10 }"
 	s.LoadAvg = parseLoadAvg(strings.Trim(sysctl("vm.loadavg"), "{} "))
+	// CPU utilization: `top -l 2` reports a settled second sample.
+	if out, err := runCmd("top", "-l", "2", "-n", "0"); err == nil {
+		s.CPUPercent = parseTopCPU(out)
+	}
 	s.Disks = unixDisks()
 	return s, nil
 }
