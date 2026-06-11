@@ -1,0 +1,38 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const title = 'Security — Lookout docs';
+const description = 'How Lookout is built to be secure: outbound-only agents, no shell calls, least privilege, constant-time auth, and data minimization.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Security</h1>
+  <p>Lookout monitors infrastructure, so it’s built to meet the standards it measures. Security is a design constraint, not a feature bolted on later.</p>
+
+  <h2>Agents are outbound-only</h2>
+  <p>The agent never opens a listening port. It only makes <strong>outbound</strong> connections to your control plane. That means no inbound firewall rules on your servers, and no listening service for an attacker to reach — a meaningful improvement over legacy agents (like Nagios NRPE) that listen on a port.</p>
+
+  <h2>No shell, no injection</h2>
+  <p>Every command the agent runs is invoked directly with fixed arguments — never through a shell, and never with untrusted input interpolated. There is no command-injection surface.</p>
+
+  <h2>Least privilege</h2>
+  <ul>
+    <li>The agent reads OS-native sources to gather inventory; run it as an unprivileged, isolated user (e.g. systemd <code>DynamicUser=yes</code>).</li>
+    <li>It collects only what’s needed to assess health — not your secrets, credentials, or file contents.</li>
+  </ul>
+
+  <h2>Authenticated reports</h2>
+  <p>Agents authenticate to the control plane with a shared enrollment token, compared in <strong>constant time</strong> so it can’t be guessed via timing. Report bodies are size-capped to prevent abuse. Always run the control plane behind TLS.</p>
+
+  <h2>Your data stays yours</h2>
+  <ul>
+    <li>Self-hosted, everything stays in your infrastructure — nothing is sent to us.</li>
+    <li>Rotate the enrollment token any time.</li>
+    <li>The dashboard is a single service you control; put SSO + MFA in front of it with Cloudflare Access or your proxy.</li>
+  </ul>
+
+  <h2>Honest about claims</h2>
+  <p>We harden Lookout, threat-model it, and scan dependencies — but no software is ever “zero vulnerabilities,” and we won’t claim it is. Likewise, Lookout is built to <em>align</em> with NIST CSF, HIPAA, SOC 2, and GDPR controls and to produce the evidence an auditor needs; compliance certification is an organizational audit process, not something software alone provides.</p>
+
+  <h2>Reporting a vulnerability</h2>
+  <p>Please report security issues privately via GitHub Security Advisories on the <a href="https://github.com/jsdosanj/lookout">repository</a> — not in public issues.</p>
+</Docs>

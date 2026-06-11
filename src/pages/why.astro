@@ -1,0 +1,107 @@
+---
+import Base from '../layouts/Base.astro';
+import { DEMO_URL, GITHUB_URL } from '../consts';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'Why Lookout — the problem it solves, and how';
+const description =
+  'Most teams find out a server is in trouble after it breaks. Lookout gives you plain-English health and early warnings for your whole fleet, without the complexity of legacy monitoring.';
+
+const problems = [
+  { t: 'You find out too late', b: 'A disk fills up, a service dies, a box stops responding — and you only learn when a customer complains or the app is already down.' },
+  { t: 'Legacy tools are built for experts', b: 'Nagios is powerful, but standing it up means config files, open ports (NRPE), and a vocabulary most teams don’t have time to learn.' },
+  { t: 'Dashboards speak jargon', b: 'Pages of metrics and graphs don’t tell a non-expert the one thing they need: is this OK, and if not, what do I do?' },
+  { t: 'Nobody owns it', b: 'The clinic, the school, the 20-person company — they have servers but no security or ops team. So monitoring just… doesn’t happen.' },
+];
+const solutions = [
+  { t: 'Early warning, not autopsy', b: 'Lookout watches continuously and flags trouble — “disk /data is 94% full” — while you can still fix it on your schedule, not at 2am.' },
+  { t: 'Set up in minutes', b: 'One small agent per server. It only makes outbound connections, so there are no inbound ports to open and no firewall holes to punch.' },
+  { t: 'Plain-English verdicts', b: 'Every server reads ok / warning / critical with the reason in one line. Executives get the meaning; engineers get the detail underneath.' },
+  { t: 'Built for people without an ops team', b: 'If you can paste a command into a terminal, you can run Lookout. And it’s open source, so it costs nothing to start.' },
+];
+---
+
+<Base title={title} description={description}>
+  <section class="relative overflow-hidden grid-texture">
+    <div class="pointer-events-none absolute -top-32 left-1/2 h-[32rem] w-[50rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-600/25 to-fuchsia-600/15 blur-3xl"></div>
+    <div class="relative mx-auto max-w-4xl px-6 pt-20 pb-12 text-center">
+      <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">The problem & the fix</span>
+      <h1 class="mt-4 text-balance text-4xl font-black tracking-tight text-white md:text-5xl">Most teams find out a server is in trouble <span class="text-red-400">after it breaks.</span></h1>
+      <p class="mx-auto mt-6 max-w-2xl text-pretty text-lg text-slate-300">That’s the expensive way — downtime, lost data, a frantic scramble. Lookout exists to flip it: know where every server stands, in plain English, <span class="text-white">before</span> the problem finds you.</p>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-5xl px-6 py-16">
+    <h2 class="text-2xl font-black text-white">Why monitoring doesn’t happen</h2>
+    <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+      {problems.map((p) => (
+        <div class="rounded-2xl border border-red-500/15 bg-red-500/[0.04] p-6">
+          <h3 class="font-bold text-white">{p.t}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-slate-400">{p.b}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="border-y border-white/5 bg-white/[0.02]">
+    <div class="mx-auto max-w-5xl px-6 py-16">
+      <h2 class="text-2xl font-black text-white">How Lookout solves it</h2>
+      <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+        {solutions.map((s) => (
+          <div class="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] p-6">
+            <h3 class="font-bold text-white">{s.t}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-400">{s.b}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Reactive vs proactive -->
+  <section class="mx-auto max-w-5xl px-6 py-16">
+    <h2 class="text-2xl font-black text-white">Reactive vs. proactive</h2>
+    <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-6">
+        <h3 class="font-bold text-red-400">Without Lookout</h3>
+        <ul class="mt-3 space-y-2 text-sm text-slate-300">
+          <li>🔴 Learn about the full disk during the outage</li>
+          <li>🔴 Audit/incident is a multi-day fire drill</li>
+          <li>🔴 No idea what’s installed or running where</li>
+          <li>🔴 One tool per problem, none of them readable</li>
+        </ul>
+      </div>
+      <div class="rounded-2xl border border-indigo-400/30 bg-indigo-500/[0.06] p-6">
+        <h3 class="font-bold text-emerald-400">With Lookout</h3>
+        <ul class="mt-3 space-y-2 text-sm text-slate-200">
+          <li>🟢 Get warned at 80% disk, fix it calmly</li>
+          <li>🟢 Inventory + posture ready on demand</li>
+          <li>🟢 Every host’s specs, packages & services in one place</li>
+          <li>🟢 One plain-English dashboard for the whole fleet</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works technically -->
+  <section class="border-t border-white/5 bg-white/[0.02]">
+    <div class="mx-auto max-w-4xl px-6 py-16">
+      <h2 class="text-2xl font-black text-white">How it works under the hood</h2>
+      <p class="mt-3 text-slate-400">Lookout has two pieces: a tiny <strong class="text-white">agent</strong> on each server, and a <strong class="text-white">control plane</strong> that collects reports and serves the dashboard.</p>
+      <pre class="mt-6 overflow-x-auto rounded-xl border border-white/10 bg-slate-950 p-5 text-sm text-emerald-300"><code>  your servers            outbound HTTPS              control plane
+  ┌────────────┐   (no inbound ports)   ┌────────────────────┐
+  │ agent (Go) │ ─────────────────────▶ │ ingest + health    │ ──▶ dashboard
+  │ collectors │                        │ alerts · plugins   │ ──▶ alerts
+  └────────────┘                        └────────────────────┘</code></pre>
+      <ul class="mt-6 space-y-3 text-slate-300">
+        <li>• The agent is a single Go binary — no runtime, no dependencies, runs as a service.</li>
+        <li>• It only makes <strong class="text-white">outbound</strong> connections, so monitored servers never open a port. (Safer than legacy agents that listen on one.)</li>
+        <li>• It reads OS-native sources (<code>/proc</code>, <code>dpkg</code>/<code>rpm</code>, WMI, <code>launchctl</code>) — never your secrets.</li>
+        <li>• The control plane computes health, stores history, and you self-host it or let us host it.</li>
+      </ul>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href={`${base}docs/`} class="rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-5 py-2.5 font-semibold text-white transition hover:opacity-90">Read the docs</a>
+        <a href={DEMO_URL} class="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 font-semibold text-white transition hover:bg-white/10">See the live demo</a>
+        <a href={GITHUB_URL} class="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 font-semibold text-white transition hover:bg-white/10">GitHub</a>
+      </div>
+    </div>
+  </section>
+</Base>

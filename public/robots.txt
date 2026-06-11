@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jsdosanj.github.io/lookout-site/sitemap-index.xml
