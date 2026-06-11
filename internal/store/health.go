@@ -55,6 +55,10 @@ func Evaluate(srv *Server, now time.Time) Health {
 	return Health{Status: status, Reasons: reasons}
 }
 
+// WorseThan reports whether status a is strictly more severe than status b
+// (ok < warning < critical < stale).
+func WorseThan(a, b string) bool { return rank(a) > rank(b) }
+
 func rank(status string) int {
 	switch status {
 	case "warning":
