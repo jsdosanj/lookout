@@ -15,9 +15,13 @@ roadmap, and **[CLAUDE.md](CLAUDE.md)** for engineering guidelines.
 
 ## Status
 
-**Phase 1 — agent (in progress).** The agent collects a host report (specs,
-packages, services) and prints it as JSON. Secure transport to the control plane
-and the dashboard are the next phases.
+**Phase 1–2 — agent + control plane + dashboard (working MVP).** The agent
+collects a host report and reports it to the control plane, which computes
+plain-English health and serves a dashboard (overview + per-server detail).
+Alerting, RBAC/MFA, plugins, and a SQLite store are the next phases.
+
+A **static live demo** of the dashboard is generated into [`docs/`](docs) and
+can be hosted on GitHub Pages.
 
 ## Agent — build & run
 
@@ -50,6 +54,35 @@ Design notes:
 - **No shell** — every command runs via `exec.Command` with fixed arguments, so
   there is no shell-injection surface.
 - All parsing logic is pure and unit-tested (`go test ./...`).
+
+## Control plane & dashboard
+
+```bash
+# build and run the control plane (dashboard at http://localhost:8080)
+go build -o lookout-server ./cmd/lookout-server
+LOOKOUT_TOKEN=your-secret ./lookout-server
+
+# on each server, point the agent at it
+./lookout-agent run --server http://YOUR_HOST:8080 --token your-secret
+```
+
+The dashboard shows every server with a plain-English status (ok / warning /
+critical / stale), memory and disk usage, and a per-server detail page.
+
+> **Security note (MVP):** agent reports are authenticated with a shared bearer
+> token, checked in constant time, over plain HTTP. Production needs TLS +
+> per-agent credentials (mTLS) — tracked in the plan, not yet implemented. Don't
+> expose the control plane to the internet without a TLS-terminating proxy.
+
+## Live demo
+
+The static demo under `docs/` is generated from sample data:
+
+```bash
+go run ./cmd/lookout-demo     # regenerates ./docs
+```
+
+Host it by enabling **GitHub Pages → source: `/docs`** (or a `gh-pages` branch).
 
 ## Tests
 
