@@ -12,6 +12,7 @@ type pageView struct {
 	Active         string
 	Chrome         bool
 	UserEmail      string
+	UserRole       string
 	CanManageUsers bool
 }
 
@@ -36,6 +37,7 @@ func (s *Server) page(active string, r *http.Request) pageView {
 	pv := pageView{Active: active, Chrome: true}
 	if u := auth.CurrentUser(r); u != nil {
 		pv.UserEmail = u.Email
+		pv.UserRole = string(u.Role)
 		pv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
 	}
 	return pv

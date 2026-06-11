@@ -91,6 +91,12 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
 .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:.5rem;font-size:.85rem;border-top:1px solid var(--line);padding-top:.9rem}
 .side-foot a{color:var(--muted)}.side-foot a:hover{color:var(--ink)}
 .content{flex:1;min-width:0;padding:1.6rem 2rem;max-width:1180px}
+.navhead{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:.9rem 0 .2rem;padding:0 .7rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);margin:-1.6rem -2rem 1.4rem;padding:.85rem 2rem;background:var(--panel)}
+.tb-acct{display:flex;align-items:center;gap:1rem;font-size:.9rem}
+.tb-acct a{color:var(--muted)}.tb-acct a:hover{color:var(--ink)}
+.tb-role{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(99,102,241,.16);color:var(--brand);padding:.2rem .55rem;border-radius:999px}
+@media(max-width:820px){.topbar{margin:-1.2rem -1.2rem 1rem;padding:.75rem 1.2rem}}
 .intro{color:var(--muted);max-width:680px;margin:.2rem 0 1.4rem}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
 .icard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.1rem}
@@ -266,15 +272,21 @@ const shellTop = `<div class="app">
       <a href="/guides" class="{{if eq .Active "guides"}}on{{end}}">&#10067; Help &amp; Guides</a>
       <a href="/integrations" class="{{if eq .Active "integrations"}}on{{end}}">&#129513; Integrations</a>
       <a href="/notifications" class="{{if eq .Active "notifications"}}on{{end}}">&#128276; Notifications</a>
-      {{if .CanManageUsers}}<a href="/admin/users" class="{{if eq .Active "users"}}on{{end}}">&#128101; Users</a>{{end}}
+      {{if .CanManageUsers}}<div class="navhead">Administration</div>
+      <a href="/admin/users">&#128101; Users</a>
+      <a href="/admin/org/group">&#128101; Groups</a>
+      <a href="/admin/org/department">&#127970; Departments</a>
+      <a href="/admin/org/location">&#128205; Locations</a>{{end}}
       <a href="/settings" class="{{if eq .Active "settings"}}on{{end}}">&#9881; Settings</a>
     </nav>
     <div class="side-foot">
       <button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">&#9681; Theme</button>
-      {{if .UserEmail}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="margin:0"><button class="linkbtn">Sign out</button></form>{{end}}
     </div>
   </aside>{{end}}
-  <main class="content">`
+  <main class="content">
+  {{if .UserEmail}}<div class="topbar"><div></div>
+    <div class="tb-acct"><span class="tb-role">{{.UserRole}}</span><a href="/account" title="Account">{{.UserEmail}}</a><form method="post" action="/logout" style="margin:0"><button class="linkbtn">Sign out</button></form></div>
+  </div>{{end}}`
 
 const shellBottom = `</main></div></body></html>`
 
