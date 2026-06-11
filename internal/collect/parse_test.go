@@ -138,6 +138,18 @@ func TestVirt(t *testing.T) {
 	}
 }
 
+func TestEncryption(t *testing.T) {
+	if parseFileVault("FileVault is On.") != "on" || parseFileVault("FileVault is Off.") != "off" || parseFileVault("?") != "" {
+		t.Error("FileVault parse wrong")
+	}
+	if parseBitLocker("FullyEncrypted") != "on" || parseBitLocker("FullyDecrypted") != "off" || parseBitLocker("") != "" {
+		t.Error("BitLocker parse wrong")
+	}
+	if parseLsblkCrypt("disk\npart\ncrypt\nlvm") != "on" || parseLsblkCrypt("disk\npart") != "off" || parseLsblkCrypt("") != "" {
+		t.Error("lsblk parse wrong")
+	}
+}
+
 func TestParseWinDisks(t *testing.T) {
 	in := "C:\t107374182400\t53687091200\nD:\t0\t0\n"
 	disks := parseWinDisks(in)

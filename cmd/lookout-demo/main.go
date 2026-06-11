@@ -41,6 +41,12 @@ func main() {
 			[]collect.Service{{Name: "redis", Status: "running"}, {Name: "ssh", Status: "running"}}, 88), now),
 	}
 
+	// Most servers encrypted; one left unencrypted for realism.
+	for _, s := range servers {
+		s.LastReport.Host.Encryption = "on"
+	}
+	servers[2].LastReport.Host.Encryption = "off" // app-02
+
 	if err := server.WriteStaticDemo("docs", servers, now); err != nil {
 		log.Fatal(err)
 	}

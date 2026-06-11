@@ -34,6 +34,9 @@ func collectHost() (Host, error) {
 	if v, err := ps("$c=Get-CimInstance Win32_ComputerSystem; \"$($c.Manufacturer) $($c.Model)\""); err == nil {
 		h.Virtualization = winVirt(v)
 	}
+	if v, err := ps("(Get-BitLockerVolume -MountPoint $env:SystemDrive).VolumeStatus"); err == nil {
+		h.Encryption = parseBitLocker(v)
+	}
 	return h, nil
 }
 
