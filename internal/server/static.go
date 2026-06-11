@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jsdosanj/servmonitor/internal/store"
+	"github.com/jsdosanj/lookout/internal/store"
 )
 
 // WriteStaticDemo renders a frozen, self-contained copy of the dashboard into

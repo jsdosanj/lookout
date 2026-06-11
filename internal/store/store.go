@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jsdosanj/servmonitor/internal/collect"
+	"github.com/jsdosanj/lookout/internal/collect"
 )
 
 // Server is the latest known state of one monitored host.
