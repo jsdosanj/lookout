@@ -58,14 +58,27 @@ Design notes:
 ```bash
 # build and run the control plane (dashboard at http://localhost:8080)
 go build -o lookout-server ./cmd/lookout-server
-LOOKOUT_TOKEN=your-secret ./lookout-server
+# create the first owner account on first run, then log in at /login
+LOOKOUT_TOKEN=your-secret \
+  LOOKOUT_ADMIN_EMAIL=you@example.com LOOKOUT_ADMIN_PASSWORD=a-strong-password \
+  ./lookout-server
 
 # on each server, point the agent at it
 ./lookout-agent run --server http://YOUR_HOST:8080 --token your-secret
 ```
 
 The dashboard shows every server with a plain-English status (ok / warning /
-critical / stale), memory and disk usage, and a per-server detail page.
+critical / stale), CPU / memory / disk usage with time-series charts, and a
+per-server detail page.
+
+**Accounts & access.** The dashboard is behind login with:
+
+- **Email + password** (bcrypt) and optional **SSO** (Google / GitHub) — set
+  `LOOKOUT_OAUTH_GOOGLE_CLIENT_ID/_SECRET`, `LOOKOUT_OAUTH_GITHUB_CLIENT_ID/_SECRET`,
+  and `LOOKOUT_BASE_URL=https://monitor.example.com`.
+- **TOTP MFA** (authenticator apps) — users enable it at `/account`.
+- **RBAC** — roles (owner / admin / operator / viewer); admins manage users at
+  `/admin/users`. Set `LOOKOUT_SECURE_COOKIES=true` behind TLS.
 
 > **Security note (MVP):** agent reports are authenticated with a shared bearer
 > token, checked in constant time, over plain HTTP. Production needs TLS +

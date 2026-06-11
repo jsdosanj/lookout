@@ -23,6 +23,9 @@ a{color:inherit;text-decoration:none}
 code{font-family:ui-monospace,Menlo,monospace;background:#0b1220;border:1px solid var(--line);border-radius:6px;padding:.15rem .4rem;font-size:.85em}
 .wrap{max-width:1100px;margin:0 auto;padding:1.5rem}
 header.top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:1rem 1.5rem}
+.topnav{display:flex;gap:1.2rem;align-items:center;font-size:.88rem}
+.topnav a{color:var(--muted)}.topnav a:hover{color:#fff}
+.linkbtn{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0}.linkbtn:hover{color:#fff}
 .logo{font-weight:800;font-size:1.2rem;letter-spacing:-.02em}
 .logo b{color:var(--brand)}
 .summary{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.4rem}
@@ -68,7 +71,9 @@ const headOpen = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><me
 const styleTag = `<style>` + cssConst + `</style></head><body>`
 
 const dashBody = `
-<header class="top"><div class="logo">Look<b>out</b></div><div class="sub">Control plane</div></header>
+<header class="top"><div class="logo">Look<b>out</b></div>
+  {{if .UserEmail}}<div class="topnav">{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form></div>{{else}}<div class="sub">Control plane</div>{{end}}
+</header>
 <div class="wrap">
   <div class="summary">
     <span class="chip"><b>{{.Total}}</b> servers</span>
@@ -106,7 +111,9 @@ const dashBody = `
 </body></html>`
 
 const detailBody = `
-<header class="top"><div class="logo">Look<b>out</b></div><div class="sub">Control plane</div></header>
+<header class="top"><div class="logo">Look<b>out</b></div>
+  {{if .UserEmail}}<div class="topnav">{{if .CanManageUsers}}<a href="/admin/users">Users</a>{{end}}<a href="/account">{{.UserEmail}}</a><form method="post" action="/logout" style="display:inline;margin:0"><button class="linkbtn">Sign out</button></form></div>{{else}}<div class="sub">Control plane</div>{{end}}
+</header>
 <div class="wrap">
   <a class="back" href="{{.BackHref}}">&larr; All servers</a>
   <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
