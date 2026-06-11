@@ -1,0 +1,50 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'Getting started — Lookout docs';
+const description = 'Install Lookout and see your first server in the dashboard in about five minutes.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Getting started</h1>
+  <p>This guide takes you from nothing to your first server on the dashboard. If you can paste a command into a terminal, you can do this.</p>
+
+  <h2>What you’ll set up</h2>
+  <ul>
+    <li><strong>The control plane</strong> — the dashboard that collects reports. You run one of these.</li>
+    <li><strong>The agent</strong> — a tiny program you put on each server you want to watch.</li>
+  </ul>
+
+  <h2>1. Get the code</h2>
+  <p>Lookout is open source. You need <a href="https://go.dev/dl/">Go 1.26+</a> to build it (a one-line install is coming).</p>
+  <pre><code>{`git clone https://github.com/jsdosanj/lookout.git
+cd lookout`}</code></pre>
+
+  <h2>2. Start the control plane</h2>
+  <p>Pick a secret token — agents use it to prove they’re allowed to report.</p>
+  <pre><code>{`go build -o lookout-server ./cmd/lookout-server
+LOOKOUT_TOKEN=choose-a-long-secret ./lookout-server`}</code></pre>
+  <p>The dashboard is now at <code>http://localhost:8080</code>. It’s empty until a server reports in.</p>
+
+  <h2>3. Run the agent</h2>
+  <p>On the same machine (to try it) or any server you want to watch:</p>
+  <pre><code>{`go build -o lookout-agent ./cmd/lookout-agent
+./lookout-agent run --server http://localhost:8080 --token choose-a-long-secret --once`}</code></pre>
+  <p>Refresh the dashboard — your server is there, with its status, memory, disk, and services.</p>
+
+  <h2>4. Keep it reporting</h2>
+  <p>Drop <code>--once</code> to have the agent report continuously (every minute by default):</p>
+  <pre><code>{`./lookout-agent run --server http://localhost:8080 --token choose-a-long-secret`}</code></pre>
+  <p>In production you’d install the agent as a service so it starts on boot — see <a href={`${base}docs/install-agent/`}>Install the agent</a>.</p>
+
+  <h2>Just want to look first?</h2>
+  <p>You can also collect a report without a server, to see exactly what the agent gathers:</p>
+  <pre><code>{`./lookout-agent report`}</code></pre>
+
+  <h2>Next steps</h2>
+  <ul>
+    <li><a href={`${base}docs/install-agent/`}>Install the agent</a> on Linux, Windows, or macOS as a service.</li>
+    <li><a href={`${base}docs/self-hosting/`}>Self-host the control plane</a> for your whole team.</li>
+    <li><a href={`${base}docs/alerts/`}>Set up alerts</a> so you’re told before something breaks.</li>
+  </ul>
+</Docs>

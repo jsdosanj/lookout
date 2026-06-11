@@ -1,0 +1,41 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const title = 'Alerts — Lookout docs';
+const description = 'Get told the moment a server drifts out of health — by email, Slack, or webhook — with dedup and escalation, not noise.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Alerts</h1>
+  <p>Monitoring only helps if it tells you in time. Lookout’s alerting is designed to warn you the moment a server crosses a threshold or goes silent — and to stay quiet otherwise.</p>
+
+  <blockquote>
+    <p><strong>Status:</strong> the dashboard computes health today (ok / warning / critical / stale). Notification delivery (email/Slack/webhook), dedup, and escalation are the next phase — this page describes how they work so you can plan for them.</p>
+  </blockquote>
+
+  <h2>What triggers an alert</h2>
+  <ul>
+    <li>A server crosses a threshold (e.g. disk ≥ 90%, memory ≥ 90%).</li>
+    <li>A critical service stops running.</li>
+    <li>A server goes <strong>stale</strong> — no report for 5 minutes — which usually means it’s down.</li>
+    <li>Any custom <a href="../plugins/">plugin</a> returns a warning or critical result.</li>
+  </ul>
+
+  <h2>Channels</h2>
+  <ul>
+    <li><strong>Email</strong> — a plain-English summary of what changed and what to do.</li>
+    <li><strong>Slack</strong> — a message to the channel of your choice.</li>
+    <li><strong>Webhook</strong> — POST the event anywhere (PagerDuty, Opsgenie, your own handler).</li>
+  </ul>
+
+  <h2>Designed to avoid noise</h2>
+  <ul>
+    <li><strong>Dedup</strong> — one alert per problem, not one per check run.</li>
+    <li><strong>Recovery</strong> — you’re told when it clears, too.</li>
+    <li><strong>Escalation</strong> — if a critical isn’t acknowledged, escalate to the next contact.</li>
+  </ul>
+
+  <h2>Gate your pipeline</h2>
+  <p>The agent can also fail a CI/CD job if a previously-passing check regressed — so you catch drift before you ship:</p>
+  <pre><code>{`lookout-agent run --once --fail-on-drift   # exits non-zero on a regression`}</code></pre>
+  <p>(<code>--fail-on-drift</code> is part of the monitoring roadmap.)</p>
+</Docs>

@@ -1,250 +1,144 @@
 ---
-import '../styles/global.css';
+import Base from '../layouts/Base.astro';
+import { DEMO_URL, GITHUB_URL } from '../consts';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
-const demoUrl = 'https://jsdosanj.github.io/servmonitor/';
-const githubUrl = 'https://github.com/jsdosanj/servmonitor';
 const title = 'Lookout — Know your servers are healthy, before they’re not';
 const description =
   'Open-source IT infrastructure monitoring built for humans. Install a lightweight agent on any server (Linux, Windows, macOS) and get a plain-English health dashboard. Self-host free, or let us host it.';
 
 const oses = ['Ubuntu', 'Debian', 'RHEL', 'Rocky', 'CentOS', 'AlmaLinux', 'Windows', 'macOS'];
-
 const features = [
   { icon: '🛰️', title: 'One tiny agent', body: 'A single dependency-free binary on each server. Outbound-only — no open ports, no agents to babysit.' },
   { icon: '💬', title: 'Plain-English health', body: 'Every server reads ok / warning / critical with the reason spelled out — “disk /data is 94% full” — not a wall of metrics.' },
-  { icon: '🧩', title: 'Bring your own checks', body: 'Nagios-plugin compatible (exit codes + perfdata), plus drop-in custom plugins. The whole existing ecosystem works.' },
+  { icon: '🧩', title: 'Bring your own checks', body: 'Nagios-plugin compatible, plus drop-in custom plugins. The whole existing ecosystem works on day one.' },
   { icon: '🔔', title: 'Alerts that matter', body: 'Get told the moment something drifts — email, Slack, or webhook — with dedup and escalation, not noise.' },
   { icon: '🔓', title: 'Open source (AGPL-3.0)', body: 'Self-host the whole thing for free, forever. Your infrastructure, your data. Or let us host it for you.' },
-  { icon: '🛡️', title: 'Secure by design', body: 'Outbound-only agents, least privilege, no shell calls, constant-time auth. Built to meet the standards it measures.' },
+  { icon: '🛡️', title: 'Secure by design', body: 'Outbound-only agents, least privilege, no shell calls, constant-time auth — built to meet the standards it measures.' },
 ];
-
 const steps = [
   { n: '1', title: 'Install the agent', body: 'One command per server. Linux, Windows, or macOS — same binary, no dependencies.' },
   { n: '2', title: 'It reports in', body: 'The agent securely sends specs, packages, and services to your dashboard on a schedule.' },
   { n: '3', title: 'See everything', body: 'Your whole fleet on one screen, color-coded, with the three things to fix first.' },
 ];
-
-const tiers = [
-  { name: 'Starter', price: '$29', unit: '/mo', sub: 'Small teams', features: ['Up to 10 hosts', 'Hosted dashboard', 'Alerts (email/Slack)', 'Email support'], cta: 'Start', featured: false },
-  { name: 'Team', price: '$99', unit: '/mo', sub: 'Growing fleets', features: ['Up to 50 hosts', 'Everything in Starter', 'Integrations & webhooks', 'Priority support'], cta: 'Start', featured: true },
-  { name: 'Business', price: '$299', unit: '/mo', sub: 'Mid-market', features: ['Up to 200 hosts', 'SSO + audit log', 'Granular RBAC', 'SLA & onboarding'], cta: 'Contact us', featured: false },
-  { name: 'Enterprise', price: 'Custom', unit: '', sub: '500+ / regulated', features: ['Unlimited hosts', 'Compliance evidence', 'Dedicated support', 'Self-host or hosted'], cta: 'Talk to us', featured: false },
-];
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <style>:root { font-family: 'Inter', system-ui, sans-serif; }</style>
-  </head>
-
-  <body class="bg-slate-950 text-slate-200 antialiased selection:bg-indigo-500/30">
-    <!-- Nav -->
-    <header class="sticky top-0 z-50 border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
-      <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <a href="#top" class="flex items-center gap-2 text-lg font-extrabold tracking-tight text-white">
-          <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm">◉</span>
-          Look<span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">out</span>
-        </a>
-        <div class="hidden items-center gap-7 text-sm font-medium text-slate-300 md:flex">
-          <a href="#features" class="hover:text-white">Features</a>
-          <a href="#how" class="hover:text-white">How it works</a>
-          <a href="#pricing" class="hover:text-white">Pricing</a>
-          <a href={githubUrl} class="hover:text-white">GitHub</a>
+<Base title={title} description={description}>
+  <!-- Hero -->
+  <section class="relative overflow-hidden grid-texture">
+    <div class="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[60rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-600/30 via-fuchsia-600/20 to-cyan-500/20 blur-3xl"></div>
+    <div class="relative mx-auto max-w-6xl px-6 pt-20 pb-16 md:pt-28">
+      <div class="mx-auto max-w-3xl text-center">
+        <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-indigo-300">● Open source · AGPL-3.0</span>
+        <h1 class="mt-6 text-balance text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">
+          Know your servers are healthy — <span class="bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent">before they’re not.</span>
+        </h1>
+        <p class="mx-auto mt-6 max-w-2xl text-pretty text-lg text-slate-300">
+          Lookout is open-source infrastructure monitoring built for humans. Drop a tiny agent on any server and get a
+          plain-English health dashboard for your whole fleet. <span class="text-white">Self-host it free, or let us host it.</span>
+        </p>
+        <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <a href={GITHUB_URL} class="rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:opacity-90">Self-host it free →</a>
+          <a href={DEMO_URL} class="rounded-xl border border-white/15 bg-white/5 px-6 py-3 font-semibold text-white transition hover:bg-white/10">Explore the live demo</a>
         </div>
-        <a href={demoUrl} class="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/15 transition hover:bg-white/15">Live demo</a>
-      </nav>
-    </header>
+        <p class="mt-4 text-sm text-slate-400">Ubuntu · Debian · RHEL · Rocky · Windows · macOS — one agent, every platform.</p>
+      </div>
 
-    <main id="top">
-      <!-- Hero -->
-      <section class="relative overflow-hidden grid-texture">
-        <div class="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[60rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-600/30 via-fuchsia-600/20 to-cyan-500/20 blur-3xl"></div>
-        <div class="relative mx-auto max-w-6xl px-6 pt-20 pb-16 md:pt-28">
-          <div class="mx-auto max-w-3xl text-center">
-            <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-indigo-300">
-              ● Open source · AGPL-3.0
-            </span>
-            <h1 class="mt-6 text-balance text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">
-              Know your servers are healthy — <span class="bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent">before they’re not.</span>
-            </h1>
-            <p class="mx-auto mt-6 max-w-2xl text-pretty text-lg text-slate-300">
-              Lookout is open-source infrastructure monitoring built for humans. Drop a tiny agent on any server and get a
-              plain-English health dashboard for your whole fleet. <span class="text-white">Self-host it free, or let us host it.</span>
-            </p>
-            <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <a href={githubUrl} class="rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:opacity-90">Self-host it free →</a>
-              <a href={demoUrl} class="rounded-xl border border-white/15 bg-white/5 px-6 py-3 font-semibold text-white transition hover:bg-white/10">Explore the live demo</a>
-            </div>
-            <p class="mt-4 text-sm text-slate-400">Ubuntu · Debian · RHEL · Rocky · Windows · macOS — one agent, every platform.</p>
-          </div>
-
-          <!-- Mock dashboard -->
-          <div class="mx-auto mt-16 max-w-4xl rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-2xl shadow-black/40 backdrop-blur">
-            <div class="mb-3 flex items-center gap-2 px-2">
-              <span class="h-3 w-3 rounded-full bg-red-400/80"></span>
-              <span class="h-3 w-3 rounded-full bg-amber-400/80"></span>
-              <span class="h-3 w-3 rounded-full bg-emerald-400/80"></span>
-              <span class="ml-3 text-xs text-slate-400">lookout · 5 servers</span>
-            </div>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div class="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                <div class="flex items-center justify-between"><span class="font-semibold text-white">web-01</span><span class="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-400">OK</span></div>
-                <div class="mt-3 h-1.5 rounded bg-slate-800"><div class="h-1.5 w-[42%] rounded bg-indigo-400"></div></div>
-                <p class="mt-2 text-xs text-slate-400">mem 42% · disk 61%</p>
-              </div>
-              <div class="rounded-xl border border-amber-500/20 bg-slate-950/60 p-4">
-                <div class="flex items-center justify-between"><span class="font-semibold text-white">app-02</span><span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-400">WARN</span></div>
-                <div class="mt-3 h-1.5 rounded bg-slate-800"><div class="h-1.5 w-[92%] rounded bg-amber-400"></div></div>
-                <p class="mt-2 text-xs text-amber-400/90">memory 92% used</p>
-              </div>
-              <div class="rounded-xl border border-red-500/20 bg-slate-950/60 p-4">
-                <div class="flex items-center justify-between"><span class="font-semibold text-white">db-01</span><span class="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-400">CRIT</span></div>
-                <div class="mt-3 h-1.5 rounded bg-slate-800"><div class="h-1.5 w-[94%] rounded bg-red-400"></div></div>
-                <p class="mt-2 text-xs text-red-400/90">disk /data is 94% full</p>
-              </div>
-            </div>
-          </div>
+      <div class="mx-auto mt-16 max-w-4xl rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-2xl shadow-black/40 backdrop-blur">
+        <div class="mb-3 flex items-center gap-2 px-2">
+          <span class="h-3 w-3 rounded-full bg-red-400/80"></span><span class="h-3 w-3 rounded-full bg-amber-400/80"></span><span class="h-3 w-3 rounded-full bg-emerald-400/80"></span>
+          <span class="ml-3 text-xs text-slate-400">lookout · 5 servers</span>
         </div>
-      </section>
-
-      <!-- OS strip -->
-      <section class="border-y border-white/5 bg-white/[0.02]">
-        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-6 py-7 text-sm font-bold uppercase tracking-wider text-slate-500">
-          {oses.map((os) => <span>{os}</span>)}
-        </div>
-      </section>
-
-      <!-- Features -->
-      <section id="features" class="mx-auto max-w-6xl px-6 py-24">
-        <div class="mx-auto max-w-2xl text-center">
-          <h2 class="text-3xl font-black tracking-tight text-white md:text-4xl">Monitoring that explains itself.</h2>
-          <p class="mt-4 text-lg text-slate-400">Everything you need to know your fleet is healthy — and nothing you don’t.</p>
-        </div>
-        <div class="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => (
-            <div class="group rounded-2xl border border-white/10 bg-slate-900/40 p-6 transition hover:border-indigo-400/40 hover:bg-slate-900/70">
-              <div class="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-xl">{f.icon}</div>
-              <h3 class="mt-5 text-lg font-bold text-white">{f.title}</h3>
-              <p class="mt-2 text-sm leading-relaxed text-slate-400">{f.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <!-- How it works -->
-      <section id="how" class="border-y border-white/5 bg-white/[0.02]">
-        <div class="mx-auto max-w-6xl px-6 py-24">
-          <div class="mx-auto max-w-2xl text-center">
-            <h2 class="text-3xl font-black tracking-tight text-white md:text-4xl">Live in three steps.</h2>
-            <p class="mt-4 text-lg text-slate-400">If you can copy a line into a terminal, you can run Lookout.</p>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div class="rounded-xl border border-white/10 bg-slate-950/60 p-4">
+            <div class="flex items-center justify-between"><span class="font-semibold text-white">web-01</span><span class="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-400">OK</span></div>
+            <div class="mt-3 h-1.5 rounded bg-slate-800"><div class="h-1.5 w-[42%] rounded bg-indigo-400"></div></div>
+            <p class="mt-2 text-xs text-slate-400">mem 42% · disk 61%</p>
           </div>
-          <div class="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
-            {steps.map((s) => (
-              <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-7">
-                <div class="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 font-bold text-white">{s.n}</div>
-                <h3 class="mt-5 text-lg font-bold text-white">{s.title}</h3>
-                <p class="mt-2 text-sm leading-relaxed text-slate-400">{s.body}</p>
-              </div>
-            ))}
+          <div class="rounded-xl border border-amber-500/20 bg-slate-950/60 p-4">
+            <div class="flex items-center justify-between"><span class="font-semibold text-white">app-02</span><span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-400">WARN</span></div>
+            <div class="mt-3 h-1.5 rounded bg-slate-800"><div class="h-1.5 w-[92%] rounded bg-amber-400"></div></div>
+            <p class="mt-2 text-xs text-amber-400/90">memory 92% used</p>
           </div>
-          <div class="mx-auto mt-10 max-w-2xl rounded-xl border border-white/10 bg-slate-950 p-4 font-mono text-sm text-emerald-300">
-            <span class="text-slate-500"># install &amp; report in</span><br />
-            curl -fsSL get.lookout.dev | sh &amp;&amp; lookout-agent run --server https://you.lookout.app
+          <div class="rounded-xl border border-red-500/20 bg-slate-950/60 p-4">
+            <div class="flex items-center justify-between"><span class="font-semibold text-white">db-01</span><span class="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-400">CRIT</span></div>
+            <div class="mt-3 h-1.5 rounded bg-slate-800"><div class="h-1.5 w-[94%] rounded bg-red-400"></div></div>
+            <p class="mt-2 text-xs text-red-400/90">disk /data is 94% full</p>
           </div>
-        </div>
-      </section>
-
-      <!-- Audience -->
-      <section class="mx-auto max-w-6xl px-6 py-24">
-        <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div class="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-transparent p-8">
-            <h3 class="text-xl font-bold text-white">For everyone</h3>
-            <p class="mt-3 text-slate-400">No security degree required. Lookout tells you, in plain English, whether your servers are OK and what to fix first — perfect for owners, office managers, and one-person IT.</p>
-          </div>
-          <div class="rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 to-transparent p-8">
-            <h3 class="text-xl font-bold text-white">For engineers</h3>
-            <p class="mt-3 text-slate-400">Nagios-compatible plugins, an API, custom checks, alerting, and CI/CD gates. Self-host the whole stack and own your data. AGPL-3.0.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Pricing -->
-      <section id="pricing" class="border-t border-white/5 bg-white/[0.02]">
-        <div class="mx-auto max-w-6xl px-6 py-24">
-          <div class="mx-auto max-w-2xl text-center">
-            <h2 class="text-3xl font-black tracking-tight text-white md:text-4xl">Open source. Self-host free — or let us run it.</h2>
-            <p class="mt-4 text-lg text-slate-400">Every plan includes every feature. Hosted plans are priced by how many hosts you watch.</p>
-          </div>
-
-          <div class="mt-12 flex flex-col items-center justify-between gap-6 rounded-2xl border border-indigo-400/30 bg-gradient-to-r from-indigo-500/10 to-fuchsia-500/10 p-8 md:flex-row">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-wider text-indigo-300">Self-Hosted · Open source</p>
-              <h3 class="mt-2 text-2xl font-black text-white">Run it yourself — free, forever.</h3>
-              <p class="mt-2 max-w-xl text-slate-400">Unlimited hosts, every feature, your infrastructure. Community support. AGPL-3.0.</p>
-            </div>
-            <div class="text-center">
-              <div class="text-4xl font-black text-white">$0</div>
-              <a href={githubUrl} class="mt-3 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-200">Get it on GitHub</a>
-            </div>
-          </div>
-
-          <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {tiers.map((t) => (
-              <div class={`relative rounded-2xl border p-6 ${t.featured ? 'border-indigo-400/50 bg-slate-900/80 shadow-xl shadow-indigo-500/10' : 'border-white/10 bg-slate-900/40'}`}>
-                {t.featured && <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-3 py-1 text-xs font-bold text-white">Most popular</span>}
-                <h3 class="text-lg font-bold text-white">{t.name}</h3>
-                <p class="text-sm text-slate-500">{t.sub}</p>
-                <div class="mt-4"><span class="text-3xl font-black text-white">{t.price}</span><span class="text-slate-400">{t.unit}</span></div>
-                <ul class="mt-5 space-y-2 text-sm text-slate-300">
-                  {t.features.map((f) => <li class="flex gap-2"><span class="text-emerald-400">✓</span>{f}</li>)}
-                </ul>
-                <a href={githubUrl} class={`mt-6 block rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition ${t.featured ? 'bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:opacity-90' : 'bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15'}`}>{t.cta}</a>
-              </div>
-            ))}
-          </div>
-          <p class="mt-8 text-center text-sm text-slate-500">Annual billing saves ~20%. Running a fleet for clients? Ask about MSP partner pricing.</p>
-        </div>
-      </section>
-
-      <!-- CTA -->
-      <section class="mx-auto max-w-6xl px-6 py-24">
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 px-8 py-16 text-center shadow-2xl shadow-indigo-500/20">
-          <h2 class="text-3xl font-black tracking-tight text-white md:text-4xl">Stop guessing whether your servers are OK.</h2>
-          <p class="mx-auto mt-4 max-w-xl text-lg text-indigo-100">Self-host Lookout in minutes, or watch the live demo first.</p>
-          <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <a href={githubUrl} class="rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-100">Get it on GitHub</a>
-            <a href={demoUrl} class="rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20">Live demo</a>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-white/5">
-      <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-10 text-sm text-slate-500 md:flex-row">
-        <div class="flex items-center gap-2 font-extrabold text-white">
-          <span class="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-xs">◉</span>
-          Lookout
-        </div>
-        <p>Open-source infrastructure monitoring · AGPL-3.0 · © 2026 Lookout</p>
-        <div class="flex gap-5">
-          <a href={githubUrl} class="hover:text-white">GitHub</a>
-          <a href={demoUrl} class="hover:text-white">Demo</a>
-          <a href="#pricing" class="hover:text-white">Pricing</a>
         </div>
       </div>
-    </footer>
-  </body>
-</html>
+    </div>
+  </section>
+
+  <!-- OS strip -->
+  <section class="border-y border-white/5 bg-white/[0.02]">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-6 py-7 text-sm font-bold uppercase tracking-wider text-slate-500">
+      {oses.map((os) => <span>{os}</span>)}
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="mx-auto max-w-6xl px-6 py-24">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-3xl font-black tracking-tight text-white md:text-4xl">Monitoring that explains itself.</h2>
+      <p class="mt-4 text-lg text-slate-400">Everything you need to know your fleet is healthy — and nothing you don’t.</p>
+    </div>
+    <div class="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {features.map((f) => (
+        <div class="group rounded-2xl border border-white/10 bg-slate-900/40 p-6 transition hover:border-indigo-400/40 hover:bg-slate-900/70">
+          <div class="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-xl">{f.icon}</div>
+          <h3 class="mt-5 text-lg font-bold text-white">{f.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-slate-400">{f.body}</p>
+        </div>
+      ))}
+    </div>
+    <div class="mt-10 text-center"><a href={`${base}why/`} class="font-semibold text-indigo-400 hover:text-indigo-300">See the problem Lookout solves →</a></div>
+  </section>
+
+  <!-- How it works -->
+  <section class="border-y border-white/5 bg-white/[0.02]">
+    <div class="mx-auto max-w-6xl px-6 py-24">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="text-3xl font-black tracking-tight text-white md:text-4xl">Live in three steps.</h2>
+        <p class="mt-4 text-lg text-slate-400">If you can copy a line into a terminal, you can run Lookout.</p>
+      </div>
+      <div class="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
+        {steps.map((s) => (
+          <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-7">
+            <div class="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 font-bold text-white">{s.n}</div>
+            <h3 class="mt-5 text-lg font-bold text-white">{s.title}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-slate-400">{s.body}</p>
+          </div>
+        ))}
+      </div>
+      <div class="mt-10 text-center"><a href={`${base}docs/getting-started/`} class="font-semibold text-indigo-400 hover:text-indigo-300">Read the getting-started guide →</a></div>
+    </div>
+  </section>
+
+  <!-- Audience -->
+  <section class="mx-auto max-w-6xl px-6 py-24">
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div class="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-transparent p-8">
+        <h3 class="text-xl font-bold text-white">For everyone</h3>
+        <p class="mt-3 text-slate-400">No security degree required. Lookout tells you, in plain English, whether your servers are OK and what to fix first — perfect for owners, office managers, and one-person IT.</p>
+      </div>
+      <div class="rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 to-transparent p-8">
+        <h3 class="text-xl font-bold text-white">For engineers</h3>
+        <p class="mt-3 text-slate-400">Nagios-compatible plugins, an API, custom checks, alerting, and CI/CD gates. Self-host the whole stack and own your data. AGPL-3.0.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="mx-auto max-w-6xl px-6 pb-24">
+    <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 px-8 py-16 text-center shadow-2xl shadow-indigo-500/20">
+      <h2 class="text-3xl font-black tracking-tight text-white md:text-4xl">Stop guessing whether your servers are OK.</h2>
+      <p class="mx-auto mt-4 max-w-xl text-lg text-indigo-100">Self-host Lookout in minutes, watch the live demo, or see pricing.</p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a href={GITHUB_URL} class="rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-100">Get it on GitHub</a>
+        <a href={DEMO_URL} class="rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20">Live demo</a>
+        <a href={`${base}pricing/`} class="rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20">Pricing</a>
+      </div>
+    </div>
+  </section>
+</Base>

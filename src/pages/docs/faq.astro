@@ -1,0 +1,29 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'FAQ — Lookout docs';
+const description = 'Common questions about Lookout: how it differs from Nagios, what it costs, what it collects, and which platforms it supports.';
+
+const faqs = [
+  { q: 'How is Lookout different from Nagios?', a: 'Same core idea — watch hosts and services, alert on problems, extend with plugins — but modernized: a single agent that’s outbound-only (no open ports), plain-English health instead of jargon, and a setup a non-expert can actually complete. Lookout is also Nagios-plugin compatible, so the existing ecosystem works.' },
+  { q: 'What does it cost?', a: 'Self-hosting is free, forever, for unlimited servers (open source, AGPL-3.0). Managed hosting is paid and priced by how many hosts you monitor — see the pricing page.' },
+  { q: 'Which platforms does the agent support?', a: 'Linux (Ubuntu, Debian, RHEL, Rocky, CentOS, AlmaLinux), Windows, and macOS — the same agent, one binary per platform.' },
+  { q: 'Does the agent open a port on my servers?', a: 'No. The agent only makes outbound connections to your control plane, so there’s nothing inbound to expose or firewall.' },
+  { q: 'What data does the agent collect?', a: 'Host info (hostname, OS, uptime), specs (CPU, memory, disk, load), installed packages, and running services. It never collects secrets, credentials, or file contents.' },
+  { q: 'Do I need to know how to code?', a: 'No. If you can paste a command into a terminal, you can install Lookout and read the dashboard. Engineers get an API, custom plugins, and CI/CD gates on top.' },
+  { q: 'Is it really secure?', a: 'It’s built secure-by-design — outbound-only agents, no shell calls, least privilege, constant-time auth. But no software is ever “zero vulnerabilities,” and we won’t claim it is. See the Security page.' },
+  { q: 'Can I monitor client fleets as an MSP?', a: 'Yes. There’s per-client partner pricing with volume discounts and an optional white-label — ask us.' },
+];
+---
+
+<Docs title={title} description={description}>
+  <h1>Frequently asked questions</h1>
+  {faqs.map((f) => (
+    <div>
+      <h2>{f.q}</h2>
+      <p>{f.a}</p>
+    </div>
+  ))}
+  <hr />
+  <p>Still stuck? Open an issue on <a href="https://github.com/jsdosanj/lookout">GitHub</a>, or read the <a href={`${base}docs/getting-started/`}>getting-started guide</a>.</p>
+</Docs>

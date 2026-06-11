@@ -1,0 +1,36 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'Lookout documentation';
+const description = 'Everything you need to install, run, and extend Lookout — written in plain English, with copy-paste commands.';
+
+const cards = [
+  { t: 'Getting started', d: 'From zero to your first report in 5 minutes.', href: `${base}docs/getting-started/` },
+  { t: 'Install the agent', d: 'Linux, Windows, and macOS — step by step.', href: `${base}docs/install-agent/` },
+  { t: 'Control plane', d: 'Run the dashboard that collects reports.', href: `${base}docs/control-plane/` },
+  { t: 'Self-hosting', d: 'Host the whole stack yourself, free.', href: `${base}docs/self-hosting/` },
+  { t: 'Using the dashboard', d: 'Read health, drill into a server.', href: `${base}docs/dashboard/` },
+  { t: 'Alerts', d: 'Get told before something breaks.', href: `${base}docs/alerts/` },
+  { t: 'Plugins & custom checks', d: 'Extend Lookout with your own checks.', href: `${base}docs/plugins/` },
+  { t: 'Security', d: 'How Lookout keeps your data safe.', href: `${base}docs/security/` },
+];
+---
+
+<Docs title={title} description={description}>
+  <h1>Documentation</h1>
+  <p>
+    Lookout is open-source IT infrastructure monitoring. You install a small <strong>agent</strong> on each server and run a
+    <strong>control plane</strong> that collects reports and shows a plain-English health dashboard. This documentation takes
+    you from install to alerting to writing your own checks — no security background required.
+  </p>
+  <p>New here? Start with <a href={`${base}docs/getting-started/`}>Getting started</a>.</p>
+
+  <div class="not-prose mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+    {cards.map((c) => (
+      <a href={c.href} class="rounded-xl border border-white/10 bg-slate-900/40 p-5 transition hover:border-indigo-400/40 hover:bg-slate-900/70">
+        <div class="font-bold text-white">{c.t} →</div>
+        <p class="mt-1 text-sm text-slate-400">{c.d}</p>
+      </a>
+    ))}
+  </div>
+</Docs>

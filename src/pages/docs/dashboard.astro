@@ -1,0 +1,45 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import { DEMO_URL } from '../../consts';
+const title = 'Using the dashboard — Lookout docs';
+const description = 'Read your fleet at a glance: ok / warning / critical / stale, with the reason spelled out, and drill into any server.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Using the dashboard</h1>
+  <p>The dashboard is designed so anyone — not just engineers — can answer one question fast: <strong>is everything OK, and if not, what do I fix?</strong> <a href={DEMO_URL}>Open the live demo</a> to follow along.</p>
+
+  <h2>The overview</h2>
+  <p>The home page shows every server as a card, color-coded by status, with a count of each status across the top.</p>
+  <ul>
+    <li><strong class="text-emerald-400">OK</strong> — nothing needs attention.</li>
+    <li><strong>WARNING</strong> — something is trending the wrong way (e.g. a disk past 80%).</li>
+    <li><strong>CRITICAL</strong> — act now (e.g. a disk past 90%, about to fill).</li>
+    <li><strong>STALE</strong> — the agent hasn’t reported recently; the server may be down or offline.</li>
+  </ul>
+  <p>Each card shows memory and top-disk usage, how many services are tracked, and — if there’s a problem — the reason in plain English, like <em>“disk /data is 94% full.”</em></p>
+
+  <h2>How status is decided</h2>
+  <table>
+    <thead><tr><th>Signal</th><th>Warning</th><th>Critical</th></tr></thead>
+    <tbody>
+      <tr><td>Disk usage</td><td>≥ 80%</td><td>≥ 90%</td></tr>
+      <tr><td>Memory usage</td><td>≥ 90%</td><td>—</td></tr>
+      <tr><td>No recent report</td><td>—</td><td>Stale after 5 min</td></tr>
+    </tbody>
+  </table>
+  <p>The worst signal wins: one critical disk makes the whole server critical. Custom thresholds and checks are on the roadmap and via <a href="../plugins/">plugins</a>.</p>
+
+  <h2>Server detail</h2>
+  <p>Click any server to see the full picture:</p>
+  <ul>
+    <li><strong>Overview</strong> — CPU, cores, uptime, load average, package count, last report time.</li>
+    <li><strong>Memory</strong> — used vs. total with a usage bar.</li>
+    <li><strong>Disks</strong> — every mounted filesystem with a usage bar.</li>
+    <li><strong>Services</strong> — what’s running vs. stopped, in a searchable list.</li>
+  </ul>
+
+  <h2>The API</h2>
+  <p>Everything on the dashboard is available as JSON for scripts and integrations:</p>
+  <pre><code>{`curl https://monitor.example.com/api/v1/servers`}</code></pre>
+</Docs>

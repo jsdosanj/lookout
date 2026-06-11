@@ -1,0 +1,53 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const title = 'Plugins & custom checks — Lookout docs';
+const description = 'Extend Lookout with your own checks. Nagios-plugin compatible, plus a simple drop-in model — write a check in any language.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Plugins & custom checks</h1>
+  <p>Lookout watches CPU, memory, disk, and services out of the box. Plugins let you check <em>anything else</em> — a website is up, a certificate isn’t expiring, a queue isn’t backing up — in any language you like.</p>
+
+  <blockquote>
+    <p><strong>Status:</strong> the plugin runner is part of the next phase. This page documents the model so you can write checks that will drop straight in.</p>
+  </blockquote>
+
+  <h2>Nagios-compatible</h2>
+  <p>If you’ve used Nagios, you already know how Lookout plugins work. A plugin is any program that:</p>
+  <ul>
+    <li>prints a human-readable status line, and</li>
+    <li>exits with a code that means the result.</li>
+  </ul>
+  <table>
+    <thead><tr><th>Exit code</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>0</code></td><td>OK</td></tr>
+      <tr><td><code>1</code></td><td>WARNING</td></tr>
+      <tr><td><code>2</code></td><td>CRITICAL</td></tr>
+      <tr><td><code>3</code></td><td>UNKNOWN</td></tr>
+    </tbody>
+  </table>
+  <p>This means the thousands of existing Nagios plugins work with Lookout unchanged.</p>
+
+  <h2>A check in any language</h2>
+  <p>Here’s a complete check in shell — “is the website returning 200?”:</p>
+  <pre><code>{`#!/usr/bin/env bash
+code=$(curl -s -o /dev/null -w "%{http_code}" https://example.com)
+if [ "$code" = "200" ]; then
+  echo "OK - site is up ($code)"; exit 0
+else
+  echo "CRITICAL - site returned $code"; exit 2
+fi`}</code></pre>
+
+  <h2>Performance data</h2>
+  <p>Append metrics after a <code>|</code> so Lookout can graph them over time:</p>
+  <pre><code>{`echo "OK - response 142ms | response_ms=142 status=200"; exit 0`}</code></pre>
+
+  <h2>Installing a custom plugin</h2>
+  <p>Drop the script in the agent’s plugins folder with a small manifest describing how often to run it:</p>
+  <pre><code>{`# /etc/lookout/plugins/site-up.yaml
+name: site-up
+command: ./site-up.sh
+interval: 60s`}</code></pre>
+  <p>The agent runs it on schedule and reports the result to the dashboard, where it shows up like any other check and can trigger <a href="../alerts/">alerts</a>.</p>
+</Docs>

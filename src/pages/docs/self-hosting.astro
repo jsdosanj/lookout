@@ -1,0 +1,45 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'Self-hosting — Lookout docs';
+const description = 'Host the entire Lookout stack yourself, for free and forever, with nothing leaving your control.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Self-hosting</h1>
+  <p>Lookout is open source under AGPL-3.0 — you can run the whole thing yourself, for unlimited servers, at no cost. Your data stays in your infrastructure.</p>
+
+  <h2>The shape of it</h2>
+  <ul>
+    <li>Run <strong>one control plane</strong> somewhere your servers can reach (a small VM is plenty).</li>
+    <li>Install the <strong>agent</strong> on each server you want to watch.</li>
+    <li>Put the dashboard behind <strong>TLS</strong> so it’s encrypted and access-controlled.</li>
+  </ul>
+
+  <h2>Recommended: Cloudflare in front</h2>
+  <p>The cleanest setup keeps the control plane private and lets <strong>Cloudflare</strong> handle TLS, DNS, access control, and ingress — with no open inbound ports on your box:</p>
+  <ul>
+    <li><strong>Cloudflare Tunnel</strong> connects your control plane outbound to Cloudflare; no port forwarding, no firewall holes.</li>
+    <li><strong>Cloudflare Access</strong> puts SSO + MFA in front of the dashboard, so only your team can open it.</li>
+    <li><strong>DNS + TLS</strong> are automatic at <code>monitor.yourcompany.com</code>.</li>
+  </ul>
+  <pre><code>{`# on the control-plane host
+./lookout-server                      # listens on localhost:8080
+cloudflared tunnel --url http://localhost:8080`}</code></pre>
+  <p>A full, step-by-step Cloudflare setup guide is maintained alongside the project.</p>
+
+  <h2>Keep your data yours</h2>
+  <ul>
+    <li>Reports and state never leave the control plane you run.</li>
+    <li>Agents send only the inventory needed to assess health — never secrets or file contents.</li>
+    <li>You hold the enrollment token; rotate it any time and re-deploy agents.</li>
+  </ul>
+
+  <h2>Updating</h2>
+  <pre><code>{`git pull
+go build -o lookout-server ./cmd/lookout-server
+sudo systemctl restart lookout-server   # if you run it as a service`}</code></pre>
+
+  <h2>Prefer not to run servers?</h2>
+  <p>Managed hosting runs all of the above for you — see <a href={`${base}pricing/`}>pricing</a>. Self-hosting stays free, forever.</p>
+</Docs>
