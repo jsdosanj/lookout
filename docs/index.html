@@ -6,7 +6,15 @@ body.light{--bg:#f1f5f9;--panel:#ffffff;--line:#e2e8f0;--ink:#0f172a;--muted:#64
 .panel-h{margin:0 0 .6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:.78rem}
 .panel.enc{display:flex;flex-direction:column;justify-content:center}
 .enc-big{font-size:2.4rem;font-weight:800;color:var(--ink)}
-@media(max-width:760px){.overview-row{grid-template-columns:1fr}}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem;margin-bottom:1.4rem}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem 1.2rem}
+.stat .n{font-size:2rem;font-weight:800;color:var(--ink);line-height:1.1}
+.stat .l{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:.2rem}
+.attention{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.4rem}
+.att-row{display:flex;align-items:center;gap:.7rem;padding:.5rem 0;border-top:1px solid var(--line)}
+.att-row:first-of-type{border-top:none}
+.att-row b{color:var(--ink)}
+@media(max-width:760px){.overview-row{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 a{color:inherit;text-decoration:none}
@@ -82,13 +90,20 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
   
   <main class="content">
 <div class="wrap">
-  <div class="summary">
-    <span class="chip"><b>5</b> servers</span>
-    <span class="chip"><span class="dot d-ok"></span><b>2</b> ok</span>
-    <span class="chip"><span class="dot d-warning"></span><b>1</b> warning</span>
-    <span class="chip"><span class="dot d-critical"></span><b>1</b> critical</span>
-    <span class="chip"><span class="dot d-stale"></span><b>1</b> stale</span>
+  <h1 style="margin-bottom:1rem">Overview</h1>
+  <div class="stats">
+    <div class="stat"><div class="n">5</div><div class="l">Servers</div></div>
+    <div class="stat"><div class="n" style="color:var(--ok)">2</div><div class="l">OK</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">1</div><div class="l">Warning</div></div>
+    <div class="stat"><div class="n" style="color:var(--crit)">1</div><div class="l">Critical</div></div>
+    <div class="stat"><div class="n" style="color:var(--stale)">1</div><div class="l">Stale</div></div>
   </div>
+  
+  <div class="attention">
+    <h3 class="panel-h" style="color:var(--warn)">&#9888; Needs attention</h3>
+    <a class="att-row" href="server-db-01.html"><span class="pill s-critical">critical</span><b>db-01</b><span class="sub">disk /data is 94% full · </span></a><a class="att-row" href="server-app-02.html"><span class="pill s-warning">warning</span><b>app-02</b><span class="sub">disk / is 83% full · memory 92% used · </span></a><a class="att-row" href="server-cache-01.html"><span class="pill s-stale">stale</span><b>cache-01</b><span class="sub">no report in 22m0s · </span></a>
+  </div>
+  
   
   <div class="overview-row" id="overviewRow">
     <div class="panel" id="panel-os"><h3 class="panel-h">Operating systems</h3><canvas id="osChart" height="150"></canvas></div>
@@ -181,7 +196,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-  const OS = {"labels":["centos","ubuntu","rocky","debian","windows"],"counts":[1,1,1,1,1]};
+  const OS = {"labels":["debian","windows","centos","ubuntu","rocky"],"counts":[1,1,1,1,1]};
   if (window.Chart && document.getElementById('osChart') && OS.labels && OS.labels.length) {
     new Chart(document.getElementById('osChart'), {
       type: 'doughnut',

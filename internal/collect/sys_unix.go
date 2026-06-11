@@ -26,3 +26,12 @@ func unixDisks() []Disk {
 	}
 	return parseDf(out)
 }
+
+// collectProcesses lists the busiest processes via POSIX `ps`.
+func collectProcesses() []Process {
+	out, err := runCmd("ps", "-axo", "pid=,pcpu=,pmem=,comm=")
+	if err != nil {
+		return nil
+	}
+	return parseProcesses(out)
+}

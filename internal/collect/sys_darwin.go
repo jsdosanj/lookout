@@ -62,6 +62,7 @@ func collectSpecs() (Specs, error) {
 		s.CPUPercent = parseTopCPU(out)
 	}
 	s.Disks = unixDisks()
+	s.Processes = collectProcesses()
 	return s, nil
 }
 
