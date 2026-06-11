@@ -266,26 +266,26 @@ const detailBody = `
 // must expose Active, UserEmail and CanManageUsers.
 const shellTop = `<div class="app">
   {{if .Chrome}}<aside class="side">
-    <a href="/" class="brand">Look<b>out</b></a>
+    <a href="{{if .Static}}index.html{{else}}/{{end}}" class="brand">Look<b>out</b></a>
     <nav class="sidenav">
-      <a href="/" class="{{if eq .Active "overview"}}on{{end}}">&#9638; Overview</a>
-      <a href="/guides" class="{{if eq .Active "guides"}}on{{end}}">&#10067; Help &amp; Guides</a>
-      <a href="/integrations" class="{{if eq .Active "integrations"}}on{{end}}">&#129513; Integrations</a>
-      <a href="/notifications" class="{{if eq .Active "notifications"}}on{{end}}">&#128276; Notifications</a>
+      <a href="{{if .Static}}index.html{{else}}/{{end}}" class="{{if eq .Active "overview"}}on{{end}}">&#9638; Overview</a>
+      <a href="{{if .Static}}guides.html{{else}}/guides{{end}}" class="{{if eq .Active "guides"}}on{{end}}">&#10067; Help &amp; Guides</a>
+      <a href="{{if .Static}}integrations.html{{else}}/integrations{{end}}" class="{{if eq .Active "integrations"}}on{{end}}">&#129513; Integrations</a>
+      <a href="{{if .Static}}notifications.html{{else}}/notifications{{end}}" class="{{if eq .Active "notifications"}}on{{end}}">&#128276; Notifications</a>
       {{if .CanManageUsers}}<div class="navhead">Administration</div>
-      <a href="/admin/users">&#128101; Users</a>
-      <a href="/admin/org/group">&#128101; Groups</a>
-      <a href="/admin/org/department">&#127970; Departments</a>
-      <a href="/admin/org/location">&#128205; Locations</a>{{end}}
-      <a href="/settings" class="{{if eq .Active "settings"}}on{{end}}">&#9881; Settings</a>
+      <a href="{{if .Static}}users.html{{else}}/admin/users{{end}}">&#128101; Users</a>
+      <a href="{{if .Static}}groups.html{{else}}/admin/org/group{{end}}">&#128101; Groups</a>
+      <a href="{{if .Static}}departments.html{{else}}/admin/org/department{{end}}">&#127970; Departments</a>
+      <a href="{{if .Static}}locations.html{{else}}/admin/org/location{{end}}">&#128205; Locations</a>{{end}}
+      <a href="{{if .Static}}settings.html{{else}}/settings{{end}}" class="{{if eq .Active "settings"}}on{{end}}">&#9881; Settings</a>
     </nav>
     <div class="side-foot">
       <button class="linkbtn" onclick="lkTheme()" title="Toggle light/dark">&#9681; Theme</button>
     </div>
   </aside>{{end}}
   <main class="content">
-  {{if .UserEmail}}<div class="topbar"><div></div>
-    <div class="tb-acct"><span class="tb-role">{{.UserRole}}</span><a href="/account" title="Account">{{.UserEmail}}</a><form method="post" action="/logout" style="margin:0"><button class="linkbtn">Sign out</button></form></div>
+  {{if .UserEmail}}<div class="topbar"><div>{{if .Static}}<span class="tb-role" style="background:rgba(245,158,11,.15);color:var(--warn)">Live demo</span>{{end}}</div>
+    <div class="tb-acct"><span class="tb-role">{{.UserRole}}</span><a href="{{if .Static}}#{{else}}/account{{end}}" title="Account">{{.UserEmail}}</a>{{if not .Static}}<form method="post" action="/logout" style="margin:0"><button class="linkbtn">Sign out</button></form>{{end}}</div>
   </div>{{end}}`
 
 const shellBottom = `</main></div></body></html>`

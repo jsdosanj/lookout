@@ -139,6 +139,7 @@ func (a *Auth) mfaDisable(w http.ResponseWriter, r *http.Request) {
 
 func (a *Auth) usersPage(w http.ResponseWriter, r *http.Request) {
 	render(w, usersTmpl, map[string]any{
+		"Nav":         template.HTML(adminNav),
 		"Me":          CurrentUser(r),
 		"Users":       a.store.ListUsers(),
 		"Roles":       []Role{RoleOwner, RoleAdmin, RoleOperator, RoleViewer},
@@ -183,6 +184,7 @@ func (a *Auth) orgPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render(w, orgTmpl, map[string]any{
+		"Nav":         template.HTML(adminNav),
 		"Kind":        kind,
 		"Title":       kindTitle(kind),
 		"DetailLabel": kindDetailLabel(kind),

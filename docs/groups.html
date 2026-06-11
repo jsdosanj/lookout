@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lookout</title><style>
+body{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;background:#0b1220;color:#e6edf7;margin:0;line-height:1.5}
+.wrap{max-width:420px;margin:6vh auto;padding:0 1.5rem}
+.wrap.wide{max-width:920px}
+.card{background:#121a2e;border:1px solid #1f2a44;border-radius:14px;padding:1.6rem}
+.logo{font-weight:800;font-size:1.4rem;text-align:center;margin-bottom:1.2rem}
+.logo b{color:#6366f1}
+h3{margin:.2rem 0 .4rem}
+label{display:block;font-size:.82rem;color:#94a3b8;margin:.8rem 0 .3rem}
+input,select{width:100%;box-sizing:border-box;background:#0b1220;border:1px solid #1f2a44;border-radius:8px;color:#e6edf7;padding:.6rem .7rem;font:inherit}
+.btn{display:block;width:100%;box-sizing:border-box;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:.65rem;font-weight:700;margin-top:1rem;cursor:pointer;text-align:center;text-decoration:none}
+.btn.ghost{background:transparent;border:1px solid #1f2a44;color:#e6edf7;margin-top:.6rem}
+.err{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:.6rem;font-size:.88rem;margin-bottom:1rem}
+.muted{color:#94a3b8;font-size:.9rem}
+a{color:#818cf8;text-decoration:none}a:hover{text-decoration:underline}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:.4rem}
+th,td{text-align:left;padding:.5rem;border-bottom:1px solid #1f2a44;vertical-align:middle}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem}
+.row{display:flex;gap:.7rem;align-items:center}
+code{background:#0b1220;border:1px solid #1f2a44;border-radius:6px;padding:.15rem .4rem;word-break:break-all;font-size:.82rem}
+form.inline{display:inline;margin:0}
+summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head><body>
+<div class="wrap wide"><div class="card">
+  <div class="bar"><div class="logo" style="margin:0">Look<b>out</b> &middot; Admin</div>
+  <div class="row" style="gap:1.1rem;font-size:.9rem;flex-wrap:wrap"><a href="users.html">Users</a><a href="groups.html">Groups</a><a href="departments.html">Departments</a><a href="locations.html">Locations</a><a href="index.html">&larr; Dashboard</a></div></div>
+  
+  <h3>Groups</h3>
+  
+  <table><tr><th>Name</th><th>Description</th><th></th></tr>
+    <tr><td><b>On-call</b></td><td class="muted">Pager rotation</td>
+      <td><form class="inline" method="post" action="/admin/org/group/delete"><input type="hidden" name="id" value="g1"><button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">Delete</button></form></td></tr><tr><td><b>Admins</b></td><td class="muted">Full access</td>
+      <td><form class="inline" method="post" action="/admin/org/group/delete"><input type="hidden" name="id" value="g2"><button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">Delete</button></form></td></tr>
+  </table>
+  
+  <h3 style="margin-top:1.4rem">Add</h3>
+  <form method="post" action="/admin/org/group/create">
+    <div class="row" style="flex-wrap:wrap">
+      <div style="flex:1;min-width:160px"><label>Name</label><input name="name" required></div>
+      <div style="flex:2;min-width:200px"><label>Description</label><input name="detail"></div>
+    </div>
+    <button class="btn" type="submit">Create</button>
+  </form>
+</div></div></body></html>
