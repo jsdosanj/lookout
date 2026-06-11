@@ -31,14 +31,16 @@ type Host struct {
 	Platform      string `json:"platform"` // ubuntu, debian, rocky, rhel, macos, windows
 	Version       string `json:"version"`
 	Arch          string `json:"arch"`
-	Kernel        string `json:"kernel,omitempty"`
-	UptimeSeconds int64  `json:"uptime_seconds"`
+	Kernel         string `json:"kernel,omitempty"`
+	UptimeSeconds  int64  `json:"uptime_seconds"`
+	Virtualization string `json:"virtualization,omitempty"` // physical, kvm, vmware, hyperv, ...
 }
 
 // Specs is point-in-time hardware + resource usage.
 type Specs struct {
 	CPUModel   string    `json:"cpu_model"`
 	CPUCores   int       `json:"cpu_cores"`
+	CPUPercent float64   `json:"cpu_percent"`
 	MemTotalMB uint64    `json:"mem_total_mb"`
 	MemUsedMB  uint64    `json:"mem_used_mb"`
 	LoadAvg    []float64 `json:"load_avg,omitempty"`
