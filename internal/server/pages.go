@@ -11,6 +11,7 @@ import (
 type pageView struct {
 	Active         string
 	Chrome         bool
+	Static         bool
 	UserEmail      string
 	UserRole       string
 	CanManageUsers bool
@@ -95,7 +96,7 @@ var integrationsTmpl = mustPage("integrations", "Integrations", `
   <h2>{{.Title}}</h2>
   <div class="cards">
     {{range .Items}}
-    <a class="icard" href="/integrations/{{.ID}}"><span class="tag {{.Status.Tag}}">{{.Status.Label}}</span><h4>{{.Name}}</h4><p>{{.Description}}</p></a>
+    <a class="icard" href="{{if $.Static}}integration-{{.ID}}.html{{else}}/integrations/{{.ID}}{{end}}"><span class="tag {{.Status.Tag}}">{{.Status.Label}}</span><h4>{{.Name}}</h4><p>{{.Description}}</p></a>
     {{end}}
   </div>
   {{end}}`)
@@ -105,13 +106,13 @@ var notificationsTmpl = mustPage("notifications", "Notifications", `
   <p class="intro">Lookout alerts you the moment a server worsens into <b>warning</b> or <b>critical</b>. Slack, Teams, and generic webhooks are live today; email and SMS are in development.</p>
   <div class="cards">
     {{range .Items}}
-    <a class="icard" href="/integrations/{{.ID}}"><span class="tag {{.Status.Tag}}">{{.Status.Label}}</span><h4>{{.Name}}</h4><p>{{.Description}}</p></a>
+    <a class="icard" href="{{if $.Static}}integration-{{.ID}}.html{{else}}/integrations/{{.ID}}{{end}}"><span class="tag {{.Status.Tag}}">{{.Status.Label}}</span><h4>{{.Name}}</h4><p>{{.Description}}</p></a>
     {{end}}
   </div>
   <div class="guide" style="margin-top:1.2rem"><h4>Enable webhook alerts (today)</h4><p>Set <code>LOOKOUT_ALERT_WEBHOOKS</code> on the control plane to one or more incoming-webhook URLs (comma-separated). Slack and Teams both accept the format Lookout sends.</p></div>`)
 
 var integrationDetailTmpl = mustPage("integration", "Integration", `
-  <a class="back" href="/{{if eq .I.Category "notifications"}}notifications{{else}}integrations{{end}}">&larr; Back</a>
+  <a class="back" href="{{if .Static}}{{if eq .I.Category "notifications"}}notifications.html{{else}}integrations.html{{end}}{{else}}/{{if eq .I.Category "notifications"}}notifications{{else}}integrations{{end}}{{end}}">&larr; Back</a>
   <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap"><h1>{{.I.Name}}</h1><span class="tag {{.I.Status.Tag}}">{{.I.Status.Label}}</span></div>
   <p class="intro">{{.I.Description}}</p>
   {{if eq .I.Status.Tag "live"}}

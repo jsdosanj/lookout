@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>web-01 &middot; Lookout</title><style>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Help & Guides &middot; Lookout</title><style>
 :root{--bg:#0b1220;--panel:#121a2e;--line:#1f2a44;--ink:#e6edf7;--muted:#94a3b8;--brand:#6366f1;--ok:#22c55e;--warn:#f59e0b;--crit:#ef4444;--stale:#64748b}
 body.light{--bg:#f1f5f9;--panel:#ffffff;--line:#e2e8f0;--ink:#0f172a;--muted:#64748b}
 .overview-row{display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;margin-bottom:1.4rem}
@@ -97,7 +97,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
     <a href="index.html" class="brand">Look<b>out</b></a>
     <nav class="sidenav">
       <a href="index.html" class="">&#9638; Overview</a>
-      <a href="guides.html" class="">&#10067; Help &amp; Guides</a>
+      <a href="guides.html" class="on">&#10067; Help &amp; Guides</a>
       <a href="integrations.html" class="">&#129513; Integrations</a>
       <a href="notifications.html" class="">&#128276; Notifications</a>
       <div class="navhead">Administration</div>
@@ -115,81 +115,13 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
   <div class="topbar"><div><span class="tb-role" style="background:rgba(245,158,11,.15);color:var(--warn)">Live demo</span></div>
     <div class="tb-acct"><span class="tb-role">owner</span><a href="#" title="Account">admin@lookout.app</a></div>
   </div>
-<div class="wrap">
-  <a class="back" href="index.html">&larr; All servers</a>
-  <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
-    <h1>web-01</h1><span class="pill s-ok">ok</span>
-  </div>
-  <div class="sub">ubuntu &middot; Ubuntu 22.04.4 LTS &middot; x86_64 &middot; kernel 6.5.0</div>
-  
-
-  <h2>Overview</h2>
-  <div class="kv">
-    <div class="item"><div class="l">CPU now</div><div class="v">38%</div></div>
-    <div class="item"><div class="l">CPU</div><div class="v">Intel Xeon E5-2680 v4</div></div>
-    <div class="item"><div class="l">Cores</div><div class="v">8</div></div>
-    <div class="item"><div class="l">Platform type</div><div class="v">physical</div></div>
-    <div class="item"><div class="l">Disk encryption</div><div class="v">on</div></div>
-    <div class="item"><div class="l">Uptime</div><div class="v">13d 17h 50m</div></div>
-    <div class="item"><div class="l">Load average</div><div class="v">0.42 0.38 0.4 </div></div>
-    <div class="item"><div class="l">Packages</div><div class="v">142</div></div>
-    <div class="item"><div class="l">Last report</div><div class="v">2026-06-11 05:33 UTC (1m ago)</div></div>
-  </div>
-
-  <h2>Performance (recent)</h2>
-  <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem"><canvas id="perf" height="90"></canvas></div>
-
-  <h2>Memory</h2>
-  <div class="metric"><span>6225 / 16384 MB</span><span>37%</span></div>
-  <div class="bar"><i class="" style="width:37%"></i></div>
-
-  <h2>Disks</h2>
-  <table><tr><th>Mount</th><th>Filesystem</th><th>Used / Total</th><th>Usage</th></tr>
-  <tr><td>/</td><td>ext4</td><td>42000 / 100000 MB</td>
-    <td><div class="bar" style="width:140px;display:inline-block;vertical-align:middle"><i class="" style="width:42%"></i></div> 42%</td></tr><tr><td>/var</td><td>ext4</td><td>61000 / 200000 MB</td>
-    <td><div class="bar" style="width:140px;display:inline-block;vertical-align:middle"><i class="" style="width:30%"></i></div> 30%</td></tr>
-  </table>
-
-  <h2>Network</h2>
-  <table><tr><th>Interface</th><th>IPv4 address</th><th>MAC</th></tr>
-  <tr><td>eth0</td><td>10.0.1.20</td><td class="sub">02:42:ac:11:00:20</td></tr><tr><td>eth1</td><td>172.16.0.5</td><td class="sub"></td></tr>
-  </table>
-
-  <h2>Top processes (by CPU)</h2>
-  <table><tr><th>PID</th><th>Process</th><th>CPU %</th><th>Mem %</th></tr>
-  <tr><td>1000</td><td>nginx</td><td>38%</td><td>20%</td></tr><tr><td>1001</td><td>postgres</td><td>20%</td><td>17%</td></tr><tr><td>1002</td><td>node</td><td>14.7%</td><td>14%</td></tr><tr><td>1003</td><td>redis-server</td><td>12.5%</td><td>11%</td></tr><tr><td>1004</td><td>python3</td><td>11.6%</td><td>8%</td></tr>
-  </table>
-
-  <h2>Services (3 running of 4)</h2>
-  <div class="svc-scroll"><table><tr><th>Service</th><th>Status</th></tr>
-  <tr><td>nginx</td><td><span class="dot d-ok"></span>running</td></tr><tr><td>ssh</td><td><span class="dot d-ok"></span>running</td></tr><tr><td>cron</td><td><span class="dot d-ok"></span>running</td></tr><tr><td>postgresql</td><td><span class="dot d-stale"></span>stopped</td></tr>
-  </table></div>
-
-  <h2>Installed packages (142)</h2>
-  <input id="pkgSearch" placeholder="Search packages…" style="width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:.5rem .7rem;font:inherit;margin-bottom:.4rem">
-  <div class="svc-scroll"><table id="pkgTable"><tr><th>Name</th><th>Version</th></tr>
-  
-  </table></div>
-  <script>(function(){var s=document.getElementById('pkgSearch'),t=document.getElementById('pkgTable');if(!s||!t)return;
-    s.addEventListener('input',function(){var q=s.value.toLowerCase();Array.prototype.slice.call(t.rows,1).forEach(function(r){
-      r.style.display=r.cells[0].textContent.toLowerCase().indexOf(q)>=0?'':'none';});});})();</script>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script>
-  const D = {"labels":["21:54","21:55","21:56","21:57","21:58","21:59","22:00","22:01","22:02","22:03","22:04","22:05","22:06","22:07","22:08","22:09","22:10","22:11","22:12","22:13","22:14","22:15","22:16","22:17","22:18","22:19","22:20","22:21","22:22","22:23","22:24","22:25","22:26","22:27","22:28","22:29","22:30","22:31","22:32","22:33"],"cpu":[46.2,43.9,40.4,35.9,31.3,27.2,24.5,23.7,25.2,28.8,33.8,39.6,45.1,49.4,51.9,52.1,50.2,46.7,42.2,37.5,33.5,30.7,29.2,29.1,30.1,31.8,33.6,35.2,36.5,37.5,38.4,39.3,40.5,42.1,43.9,45.6,46.8,46.9,45.7,43],"mem":[38.9,38.2,37.5,36.9,36.3,35.7,35.2,34.7,34.4,34.2,34,34,34.1,34.3,34.6,35,35.4,36,36.6,37.2,37.9,38.6,39.2,39.8,40.4,40.9,41.3,41.6,41.9,42,42,41.9,41.7,41.4,41,40.5,39.9,39.3,38.7,38],"disk":[40.1,40.1,40.2,40.2,40.3,40.3,40.4,40.4,40.5,40.5,40.6,40.6,40.7,40.7,40.8,40.8,40.9,40.9,41,41,41.1,41.1,41.2,41.2,41.3,41.3,41.4,41.4,41.5,41.5,41.6,41.6,41.7,41.7,41.8,41.8,41.9,41.9,42,42]};
-  if (window.Chart && document.getElementById('perf') && D.labels.length) {
-    new Chart(document.getElementById('perf'), {
-      type: 'line',
-      data: { labels: D.labels, datasets: [
-        { label: 'CPU %', data: D.cpu, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.15)', fill: true, tension: .3, pointRadius: 0, borderWidth: 2 },
-        { label: 'Memory %', data: D.mem, borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,.10)', fill: true, tension: .3, pointRadius: 0, borderWidth: 2 },
-        { label: 'Disk %', data: D.disk, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.08)', fill: true, tension: .3, pointRadius: 0, borderWidth: 2 }
-      ]},
-      options: { responsive: true, interaction: { intersect: false, mode: 'index' },
-        scales: { y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#1f2a44' } },
-                  x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { color: '#1f2a44' } } },
-        plugins: { legend: { labels: { color: '#cbd5e1' } } } }
-    });
-  }
-</script>
-</main></div></body></html>
+  <h1>Help &amp; Guides</h1>
+  <p class="intro">Short, plain-English explainers for everything on the dashboard. New to Lookout? Start at the top.</p>
+  <div class="guide"><h4>Overview</h4><p>Every server you monitor, as a card, color-coded by health: <b>ok</b> (all good), <b>warning</b> (something's trending the wrong way), <b>critical</b> (act now), <b>stale</b> (the agent stopped reporting — the box may be down).</p></div>
+  <div class="guide"><h4>How health is decided</h4><p>A disk over 80% used is a warning, over 90% is critical. Memory over 90% is a warning. No report for 5 minutes is stale. The worst signal wins, and the reason is always spelled out — e.g. "disk /data is 94% full."</p></div>
+  <div class="guide"><h4>Performance charts</h4><p>Open any server to see CPU, memory, and disk usage over time. Watch for sustained climbs — they're your early warning before something fills up or falls over.</p></div>
+  <div class="guide"><h4>OS distribution &amp; encryption</h4><p>The Overview shows the mix of operating systems across your fleet and how many machines have disk encryption (FileVault / BitLocker / LUKS) turned on — a quick compliance read.</p></div>
+  <div class="guide"><h4>Integrations</h4><p>Connect Lookout to the tools you already use — ticketing (Jira, ServiceNow, …), MDM (Jamf, Intune, …), Active Directory, and Sightline for security posture. Each needs its own credentials; see the Integrations tab.</p></div>
+  <div class="guide"><h4>Notifications</h4><p>Get told when something breaks — Slack, Teams, email, SMS, or a webhook. Configure channels in the Notifications tab.</p></div>
+  <div class="guide"><h4>Users, roles &amp; MFA</h4><p>Admins add users at <b>Users</b> and assign roles (owner / admin / operator / viewer). Everyone can turn on two-factor authentication from <b>Account</b>.</p></div>
+  <div class="guide"><h4>Installing agents</h4><p>Run one small agent per server (Linux, Windows, macOS). It only makes outbound connections — no open ports. See the docs for per-OS install steps.</p></div></main></div></body></html>

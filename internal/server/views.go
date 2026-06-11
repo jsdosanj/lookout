@@ -24,7 +24,8 @@ type dashView struct {
 	EncryptedCount               int
 	OSDistJSON                   template.JS
 	Active                       string
-	Chrome                       bool // render the side panel (off for the static demo)
+	Chrome                       bool // render the side panel
+	Static                       bool // static demo → relative links
 	UserEmail                    string
 	UserRole                     string
 	CanManageUsers               bool
@@ -50,6 +51,7 @@ type detailView struct {
 	ID, BackHref                             string
 	Active                                   string
 	Chrome                                   bool
+	Static                                   bool
 	UserEmail                                string
 	UserRole                                 string
 	CanManageUsers                           bool
@@ -116,7 +118,8 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 
 func buildDashView(servers []*store.Server, now time.Time, static bool) dashView {
 	var d dashView
-	d.Chrome = !static
+	d.Chrome = true
+	d.Static = static
 	osCount := map[string]int{}
 	for _, srv := range servers {
 		h := store.Evaluate(srv, now)
@@ -202,7 +205,8 @@ func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
 	dv := detailView{
 		ID:          srv.ID,
 		BackHref:    back,
-		Chrome:      !static,
+		Chrome:      true,
+		Static:      static,
 		OS:          rep.Host.OS,
 		Platform:    rep.Host.Platform,
 		Version:     rep.Host.Version,

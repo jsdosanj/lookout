@@ -104,7 +104,7 @@ var mfaSetupTmpl = authTmpl(`
 
 var usersTmpl = authTmpl(`
 <div class="wrap wide"><div class="card">
-  ` + adminNav + `
+  {{.Nav}}
   {{if .Err}}<div class="err">{{.Err}}</div>{{end}}
   <h3>Users</h3>
   <table>
@@ -157,7 +157,7 @@ var usersTmpl = authTmpl(`
 
 var orgTmpl = authTmpl(`
 <div class="wrap wide"><div class="card">
-  ` + adminNav + `
+  {{.Nav}}
   {{if .Err}}<div class="err">{{.Err}}</div>{{end}}
   <h3>{{.Title}}</h3>
   {{if .Units}}
