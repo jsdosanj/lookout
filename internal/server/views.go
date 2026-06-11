@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jsdosanj/lookout/internal/auth"
 	"github.com/jsdosanj/lookout/internal/collect"
 	"github.com/jsdosanj/lookout/internal/store"
 )
@@ -18,6 +19,8 @@ type dashView struct {
 	Servers                      []cardView
 	OK, Warning, Critical, Stale int
 	Total                        int
+	UserEmail                    string
+	CanManageUsers               bool
 }
 
 type cardView struct {
@@ -38,6 +41,8 @@ type cardView struct {
 
 type detailView struct {
 	ID, BackHref                             string
+	UserEmail                                string
+	CanManageUsers                           bool
 	OS, Platform, Version, Kernel, Arch, CPU string
 	Virtualization                           string
 	Cores                                    int
@@ -68,11 +73,12 @@ type diskView struct {
 // ── handlers ─────────────────────────────────────────────────────────────────
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
+	dv := buildDashView(s.store.List(), time.Now().UTC(), false)
+	if u := auth.CurrentUser(r); u != nil {
+		dv.UserEmail = u.Email
+		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
 	}
-	render(w, dashboardTmpl, buildDashView(s.store.List(), time.Now().UTC(), false))
+	render(w, dashboardTmpl, dv)
 }
 
 func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +87,12 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	render(w, detailTmpl, buildDetailView(srv, time.Now().UTC(), false))
+	dv := buildDetailView(srv, time.Now().UTC(), false)
+	if u := auth.CurrentUser(r); u != nil {
+		dv.UserEmail = u.Email
+		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
+	}
+	render(w, detailTmpl, dv)
 }
 
 // ── view builders (shared by live handlers and the static demo generator) ────

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jsdosanj/lookout/internal/auth"
 	"github.com/jsdosanj/lookout/internal/collect"
 	"github.com/jsdosanj/lookout/internal/store"
 )
@@ -15,23 +16,38 @@ import (
 // Server wires the HTTP handlers to the store.
 type Server struct {
 	store *store.Store
-	token string // shared enrollment token; empty = dev mode (no auth)
+	token string       // shared agent enrollment token
+	auth  *auth.Auth   // user auth; nil disables login (dev only)
 }
 
-// New creates a control-plane server. An empty token means unauthenticated
-// (development only — see the security note in the plan).
-func New(st *store.Store, token string) *Server {
-	return &Server{store: st, token: token}
+// New creates a control-plane server. token authenticates agents; a authenticates
+// dashboard users (pass nil only for a no-login dev mode).
+func New(st *store.Store, token string, a *auth.Auth) *Server {
+	return &Server{store: st, token: token, auth: a}
 }
 
 // Routes returns the HTTP handler for the control plane.
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
+	// Public + agent endpoints (agents use the enrollment token, not a login).
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("POST /api/v1/agents/report", s.handleReport)
-	mux.HandleFunc("GET /api/v1/servers", s.handleListJSON)
-	mux.HandleFunc("GET /server/{id}", s.handleDetail)
-	mux.HandleFunc("GET /", s.handleDashboard)
+
+	if s.auth == nil {
+		// No-login dev mode.
+		mux.HandleFunc("GET /api/v1/servers", s.handleListJSON)
+		mux.HandleFunc("GET /server/{id}", s.handleDetail)
+		mux.HandleFunc("GET /", s.handleDashboard)
+		return mux
+	}
+
+	// Login/account/admin/OAuth routes.
+	s.auth.Mount(mux)
+	// Dashboard requires a logged-in user with the view permission.
+	view := func(h http.HandlerFunc) http.Handler { return s.auth.RequirePermission(auth.PermViewDashboard, h) }
+	mux.Handle("GET /api/v1/servers", view(s.handleListJSON))
+	mux.Handle("GET /server/{id}", view(s.handleDetail))
+	mux.Handle("GET /{$}", view(s.handleDashboard))
 	return mux
 }
 
