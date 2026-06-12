@@ -5,11 +5,21 @@ import { SITE_NAME, DEMO_URL, CONTACT_MAILTO } from '../consts';
 interface Props {
   title: string;
   description: string;
+  keywords?: string;
+  ogType?: string;
+  jsonLd?: Record<string, any> | Record<string, any>[];
 }
-const { title, description } = Astro.props;
+const {
+  title,
+  description,
+  keywords = 'server monitoring, infrastructure monitoring, server health monitoring, lightweight monitoring agent, plain-English alerts, Datadog alternative, simple server monitoring, Nagios alternative, affordable server monitoring, uptime monitoring',
+  ogType = 'website',
+  jsonLd: pageJsonLd,
+} = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/'); // "/lookout-site/"
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const canonical = new URL(Astro.url.pathname.replace(/\/?$/, '/'), Astro.site).href;
 const path = Astro.url.pathname.replace(/\/$/, '');
+const ogImage = new URL(`${base}og-image.png`, Astro.site).href;
 
 const nav = [
   { label: 'Why Lookout', href: `${base}why/` },
@@ -19,16 +29,19 @@ const nav = [
 ];
 const isActive = (href: string) => path === href.replace(/\/$/, '');
 
-const jsonLd = {
+const organization = {
   '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
+  '@type': 'Organization',
   name: SITE_NAME,
-  applicationCategory: 'DeveloperApplication, ServerMonitoring',
-  operatingSystem: 'Linux, Windows, macOS',
-  description,
-  offers: { '@type': 'Offer', price: '4', priceCurrency: 'USD' },
-  url: canonical,
+  url: new URL(base, Astro.site).href,
+  logo: new URL(`${base}apple-touch-icon.png`, Astro.site).href,
+  description: 'Lookout is simple, lightweight server and infrastructure monitoring built for humans — plain-English health and alerts.',
 };
+
+const structuredData = pageJsonLd
+  ? (Array.isArray(pageJsonLd) ? pageJsonLd : [pageJsonLd])
+  : [];
+const allJsonLd = [organization, ...structuredData];
 ---
 
 <!doctype html>
@@ -39,20 +52,41 @@ const jsonLd = {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="keywords" content={keywords} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <link rel="canonical" href={canonical} />
-    <meta property="og:type" content="website" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="icon" type="image/png" sizes="32x32" href={`${base}favicon-32x32.png`} />
+    <link rel="apple-touch-icon" sizes="180x180" href={`${base}apple-touch-icon.png`} />
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Lookout — server monitoring built for humans" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content="Lookout — server monitoring built for humans" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>:root { font-family: 'Inter', system-ui, sans-serif; }</style>
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    {allJsonLd.map((node) => (
+      <script type="application/ld+json" set:html={JSON.stringify(node)} />
+    ))}
   </head>
 
   <body class="bg-slate-950 text-slate-200 antialiased selection:bg-indigo-500/30">

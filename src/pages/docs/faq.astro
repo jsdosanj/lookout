@@ -18,9 +18,19 @@ const faqs = [
   { q: 'Is it really secure?', a: 'It’s built secure-by-design — outbound-only agents, no shell calls, least privilege, constant-time auth. But no software is ever “zero vulnerabilities,” and we won’t claim it is. See the Security page.' },
   { q: 'Can I monitor client fleets as an MSP?', a: 'Yes. There’s per-client partner pricing with volume discounts and an optional white-label — contact sales.' },
 ];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
 ---
 
-<Docs title={title} description={description}>
+<Docs title={title} description={description} jsonLd={faqJsonLd}>
   <h1>Frequently asked questions</h1>
   {faqs.map((f) => (
     <div>

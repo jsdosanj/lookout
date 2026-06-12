@@ -3,9 +3,35 @@ import Base from '../layouts/Base.astro';
 import { DEMO_URL } from '../consts';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
-const title = 'Lookout — Know your servers are healthy, before they’re not';
+const title = 'Lookout — Simple Server & Infrastructure Monitoring';
 const description =
-  'IT infrastructure monitoring built for humans. Install a lightweight agent on any server (Linux, Windows, macOS) and get a plain-English health dashboard. Managed or on-prem, with simple per-server pricing.';
+  'Lookout is simple server and infrastructure monitoring built for humans. A lightweight agent reports each server in plain English with email/Slack alerts — an affordable Datadog and Nagios alternative.';
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Lookout',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Linux, Windows, macOS',
+  description:
+    'Lightweight server and infrastructure monitoring: one tiny agent per server reports OK/WARNING/CRITICAL health in plain English, with email, Slack, and webhook alerts. Nagios-plugin compatible.',
+  url: 'https://jsdosanj.github.io/lookout-site/',
+  image: 'https://jsdosanj.github.io/lookout-site/og-image.png',
+  offers: {
+    '@type': 'Offer',
+    price: '4',
+    priceCurrency: 'USD',
+    description: 'Per server per month',
+  },
+  operatingSystemSupported: 'Linux, Windows, macOS',
+  featureList: [
+    'Plain-English server health (OK / WARNING / CRITICAL)',
+    'Lightweight outbound-only monitoring agent',
+    'Email, Slack, and webhook alerts',
+    'Nagios-plugin compatible custom checks',
+    'Managed or on-prem deployment',
+  ],
+};
 
 const oses = ['Ubuntu', 'Debian', 'RHEL', 'Rocky', 'CentOS', 'AlmaLinux', 'Windows', 'macOS'];
 const features = [
@@ -23,7 +49,7 @@ const steps = [
 ];
 ---
 
-<Base title={title} description={description}>
+<Base title={title} description={description} jsonLd={softwareJsonLd}>
   <!-- Hero -->
   <section class="relative overflow-hidden grid-texture">
     <div class="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[60rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-600/30 via-fuchsia-600/20 to-cyan-500/20 blur-3xl"></div>
