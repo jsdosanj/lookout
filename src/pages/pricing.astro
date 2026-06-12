@@ -14,7 +14,7 @@ const tiers = [
     sub: 'Small teams getting started',
     features: ['Up to 25 servers', 'Hosted dashboard', 'Plain-English health', 'Email alerts', 'Nagios-compatible plugins', 'Email support'],
     cta: 'Get started',
-    href: CONTACT_HREF,
+    href: `${CONTACT_HREF}?plan=Starter`,
     featured: false,
   },
   {
@@ -24,7 +24,7 @@ const tiers = [
     sub: 'Growing fleets',
     features: ['Up to 250 servers', 'Everything in Starter', 'Slack & webhook integrations', 'Alert escalation & dedup', 'Longer metric retention', 'API access', 'SSO + MFA', 'Priority support'],
     cta: 'Get started',
-    href: CONTACT_HREF,
+    href: `${CONTACT_HREF}?plan=Pro`,
     featured: true,
   },
   {
@@ -34,7 +34,7 @@ const tiers = [
     sub: 'Large or regulated fleets',
     features: ['Unlimited servers', 'Managed or on-prem deployment', 'SSO + SCIM + RBAC', 'Audit log & compliance evidence', 'Data residency / BYOK', 'SLA, onboarding & dedicated support'],
     cta: 'Contact sales',
-    href: CONTACT_HREF,
+    href: `${CONTACT_HREF}?plan=Enterprise`,
     featured: false,
   },
 ];
