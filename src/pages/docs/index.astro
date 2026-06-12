@@ -1,6 +1,6 @@
 ---
 import Docs from '../../layouts/Docs.astro';
-import { CONTACT_EMAIL, CONTACT_MAILTO } from '../../consts';
+import { CONTACT_HREF } from '../../consts';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const title = 'Documentation — Lookout Server Monitoring';
 const description = 'Everything you need to install, run, and extend Lookout server monitoring — written in plain English, with copy-paste commands for Linux, Windows, and macOS.';
@@ -37,8 +37,8 @@ const cards = [
 
   <h2>Support</h2>
   <p>
-    Need a hand with setup, alerts, or an on-prem deployment? Email our team at
-    <a href={CONTACT_MAILTO}>{CONTACT_EMAIL}</a> and a human will get back to you. Pricing questions are
+    Need a hand with setup, alerts, or an on-prem deployment?
+    <a href={CONTACT_HREF}>Contact us</a> and a human will get back to you. Pricing questions are
     answered on the <a href={`${base}pricing/`}>pricing page</a>, and common questions are covered in the
     <a href={`${base}docs/faq/`}>FAQ</a>.
   </p>

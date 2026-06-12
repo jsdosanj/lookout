@@ -25,4 +25,4 @@ priced per monitored server. There is no free tier. See `src/pages/pricing.astro
 
 ## Contact
 
-Sales and support: jasvantdosanjh@outlook.com
+Sales and support: use the contact form at `/lookout-site/contact/`.

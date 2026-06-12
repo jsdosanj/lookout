@@ -1,6 +1,6 @@
 ---
 import Docs from '../../layouts/Docs.astro';
-import { CONTACT_MAILTO } from '../../consts';
+import { CONTACT_HREF } from '../../consts';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const title = 'Getting started — Lookout docs';
 const description = 'Install Lookout and see your first server in the dashboard in about five minutes.';
@@ -17,7 +17,7 @@ const description = 'Install Lookout and see your first server in the dashboard 
   </ul>
 
   <h2>1. Get your dashboard</h2>
-  <p>Pick a plan on the <a href={`${base}pricing/`}>pricing page</a> or <a href={CONTACT_MAILTO}>contact sales</a>. We provision your hosted dashboard and give you two things:</p>
+  <p>Pick a plan on the <a href={`${base}pricing/`}>pricing page</a> or <a href={CONTACT_HREF}>contact sales</a>. We provision your hosted dashboard and give you two things:</p>
   <ul>
     <li>your <strong>dashboard URL</strong>, e.g. <code>https://monitor.example.com</code>, and</li>
     <li>an <strong>enrollment token</strong> — agents use it to prove they’re allowed to report.</li>
