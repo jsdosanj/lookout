@@ -9,12 +9,12 @@ const description =
 
 const oses = ['Ubuntu', 'Debian', 'RHEL', 'Rocky', 'CentOS', 'AlmaLinux', 'Windows', 'macOS'];
 const features = [
-  { icon: '🛰️', title: 'One tiny agent', body: 'A single dependency-free binary on each server. Outbound-only — no open ports, no agents to babysit.' },
-  { icon: '💬', title: 'Plain-English health', body: 'Every server reads ok / warning / critical with the reason spelled out — “disk /data is 94% full” — not a wall of metrics.' },
-  { icon: '🧩', title: 'Bring your own checks', body: 'Nagios-plugin compatible, plus drop-in custom plugins. The whole existing ecosystem works on day one.' },
-  { icon: '🔔', title: 'Alerts that matter', body: 'Get told the moment something drifts — email, Slack, or webhook — with dedup and escalation, not noise.' },
-  { icon: '🏢', title: 'Managed or on-prem', body: 'Let us run the dashboard for you, or deploy the whole stack inside your own network. Both are fully supported, paid plans.' },
-  { icon: '🛡️', title: 'Secure by design', body: 'Outbound-only agents, least privilege, no shell calls, constant-time auth — built to meet the standards it measures.' },
+  { icon: '◆', title: 'One tiny agent', body: 'A single dependency-free binary on each server. Outbound-only — no open ports, no agents to babysit.' },
+  { icon: '◆', title: 'Plain-English health', body: 'Every server reads ok / warning / critical with the reason spelled out — “disk /data is 94% full” — not a wall of metrics.' },
+  { icon: '◆', title: 'Bring your own checks', body: 'Nagios-plugin compatible, plus drop-in custom plugins. The whole existing ecosystem works on day one.' },
+  { icon: '◆', title: 'Alerts that matter', body: 'Get told the moment something drifts — email, Slack, or webhook — with dedup and escalation, not noise.' },
+  { icon: '◆', title: 'Managed or on-prem', body: 'Let us run the dashboard for you, or deploy the whole stack inside your own network. Both are fully supported, paid plans.' },
+  { icon: '◆', title: 'Secure by design', body: 'Outbound-only agents, least privilege, no shell calls, constant-time auth — built to meet the standards it measures.' },
 ];
 const steps = [
   { n: '1', title: 'Install the agent', body: 'One command per server. Linux, Windows, or macOS — same binary, no dependencies.' },
@@ -86,7 +86,7 @@ const steps = [
     <div class="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {features.map((f) => (
         <div class="group rounded-2xl border border-white/10 bg-slate-900/40 p-6 transition hover:border-indigo-400/40 hover:bg-slate-900/70">
-          <div class="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-xl">{f.icon}</div>
+          <div class="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-xl text-indigo-300">{f.icon}</div>
           <h3 class="mt-5 text-lg font-bold text-white">{f.title}</h3>
           <p class="mt-2 text-sm leading-relaxed text-slate-400">{f.body}</p>
         </div>

@@ -65,7 +65,7 @@ const faqs = [
           <p class="text-sm text-slate-500">{t.sub}</p>
           <div class="mt-4"><span class="text-3xl font-black text-white">{t.price}</span><span class="text-slate-400">{t.unit}</span></div>
           <ul class="mt-5 space-y-2 text-sm text-slate-300">
-            {t.features.map((f) => <li class="flex gap-2"><span class="text-emerald-400">✓</span>{f}</li>)}
+            {t.features.map((f) => <li class="flex gap-2"><span class="text-emerald-400" aria-hidden="true">◆</span>{f}</li>)}
           </ul>
           <a href={t.href} class={`mt-6 block rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition ${t.featured ? 'bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:opacity-90' : 'bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/15'}`}>{t.cta}</a>
         </div>
