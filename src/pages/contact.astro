@@ -29,13 +29,15 @@ const description =
         <input type="hidden" name="_subject" value="New Lookout inquiry">
         <input type="hidden" name="_template" value="table">
         <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_autoresponse" value="Thanks for contacting Lookout — we've received your message and someone will be in touch shortly. — Lookout, a Dosanjh Labs project">
         <input type="hidden" name="_next" value="https://jsdosanj.github.io/lookout-site/contact?sent=1">
+        <input type="hidden" name="Source" value="Lookout">
         <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
 
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div class="sm:col-span-1">
             <label for="name" class="block text-sm font-semibold text-slate-200">Name</label>
-            <input id="name" name="name" type="text" required autocomplete="name"
+            <input id="name" name="Name" type="text" required autocomplete="name"
               class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30"
               placeholder="Jane Doe">
           </div>
@@ -45,15 +47,49 @@ const description =
               class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30"
               placeholder="jane@company.com">
           </div>
-          <div class="sm:col-span-2">
+          <div class="sm:col-span-1">
             <label for="company" class="block text-sm font-semibold text-slate-200">Company <span class="font-normal text-slate-500">(optional)</span></label>
-            <input id="company" name="company" type="text" autocomplete="organization"
+            <input id="company" name="Company" type="text" autocomplete="organization"
               class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30"
               placeholder="Acme Inc.">
           </div>
+          <div class="sm:col-span-1">
+            <label for="role" class="block text-sm font-semibold text-slate-200">Role / title <span class="font-normal text-slate-500">(optional)</span></label>
+            <input id="role" name="Role" type="text" autocomplete="organization-title"
+              class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30"
+              placeholder="Head of Infrastructure">
+          </div>
+          <div class="sm:col-span-1">
+            <label for="servers" class="block text-sm font-semibold text-slate-200">Servers to monitor</label>
+            <select id="servers" name="Servers to monitor"
+              class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30">
+              <option value="">Select…</option>
+              <option value="1–10 servers">1–10 servers</option>
+              <option value="11–50 servers">11–50 servers</option>
+              <option value="51–200 servers">51–200 servers</option>
+              <option value="200+ servers">200+ servers</option>
+            </select>
+          </div>
+          <div class="sm:col-span-1">
+            <label for="plan" class="block text-sm font-semibold text-slate-200">Plan of interest</label>
+            <select id="plan" name="Plan of interest"
+              class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30">
+              <option value="">Select…</option>
+              <option value="Starter">Starter</option>
+              <option value="Pro">Pro</option>
+              <option value="Enterprise">Enterprise</option>
+              <option value="Not sure yet">Not sure yet</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label for="phone" class="block text-sm font-semibold text-slate-200">Phone <span class="font-normal text-slate-500">(optional)</span></label>
+            <input id="phone" name="Phone" type="tel" autocomplete="tel"
+              class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30"
+              placeholder="+1 555 123 4567">
+          </div>
           <div class="sm:col-span-2">
             <label for="message" class="block text-sm font-semibold text-slate-200">Message</label>
-            <textarea id="message" name="message" rows="5" required
+            <textarea id="message" name="Message" rows="5" required
               class="mt-2 block w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/30"
               placeholder="Tell us how many servers you're running and what you'd like to monitor…"></textarea>
           </div>
@@ -83,6 +119,7 @@ const description =
 
   <script is:inline>
    (function(){try{var f=document.getElementById('cf');f.action='https://formsubmit.co/'+atob(f.getAttribute('data-e'));}catch(e){}})();
+   (function(){try{var p=new URLSearchParams(location.search).get('plan');if(!p)return;var sel=document.getElementById('plan');if(!sel)return;var want=p.trim().toLowerCase();for(var i=0;i<sel.options.length;i++){if(sel.options[i].value.toLowerCase()===want){sel.selectedIndex=i;break;}}}catch(e){}})();
    if(location.search.indexOf('sent=1')>=0){var o=document.getElementById('ok'),f=document.getElementById('cf');if(o)o.hidden=false;if(f)f.style.display='none';}
   </script>
 </Base>
