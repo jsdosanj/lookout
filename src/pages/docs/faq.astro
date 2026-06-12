@@ -1,6 +1,6 @@
 ---
 import Docs from '../../layouts/Docs.astro';
-import { CONTACT_EMAIL, CONTACT_MAILTO } from '../../consts';
+import { CONTACT_HREF } from '../../consts';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const title = 'FAQ — Lookout docs';
 const description = 'Common questions about Lookout: how it differs from Nagios, what it costs, what it collects, which platforms it supports, and how to deploy it.';
@@ -39,5 +39,5 @@ const faqJsonLd = {
     </div>
   ))}
   <hr />
-  <p>Still stuck? Email <a href={CONTACT_MAILTO}>{CONTACT_EMAIL}</a>, or read the <a href={`${base}docs/getting-started/`}>getting-started guide</a>.</p>
+  <p>Still stuck? <a href={CONTACT_HREF}>Contact us</a>, or read the <a href={`${base}docs/getting-started/`}>getting-started guide</a>.</p>
 </Docs>

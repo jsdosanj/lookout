@@ -1,6 +1,6 @@
 ---
 import Docs from '../../layouts/Docs.astro';
-import { CONTACT_MAILTO } from '../../consts';
+import { CONTACT_HREF } from '../../consts';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const title = 'On-prem deployment — Lookout docs';
 const description = 'Deploy the entire Lookout stack inside your own network with an Enterprise on-prem plan, so your monitoring data never leaves your infrastructure.';
@@ -8,7 +8,7 @@ const description = 'Deploy the entire Lookout stack inside your own network wit
 
 <Docs title={title} description={description}>
   <h1>On-prem deployment</h1>
-  <p>On the <a href={`${base}pricing/`}>Enterprise plan</a> you can run the whole Lookout stack inside your own network — the control plane and the agents — so your monitoring data never leaves your infrastructure. On-prem is a paid deployment option; <a href={CONTACT_MAILTO}>contact sales</a> to get the on-prem distribution and license.</p>
+  <p>On the <a href={`${base}pricing/`}>Enterprise plan</a> you can run the whole Lookout stack inside your own network — the control plane and the agents — so your monitoring data never leaves your infrastructure. On-prem is a paid deployment option; <a href={CONTACT_HREF}>contact sales</a> to get the on-prem distribution and license.</p>
 
   <h2>The shape of it</h2>
   <ul>
