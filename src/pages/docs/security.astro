@@ -1,5 +1,6 @@
 ---
 import Docs from '../../layouts/Docs.astro';
+import { CONTACT_EMAIL, CONTACT_MAILTO } from '../../consts';
 const title = 'Security — Lookout docs';
 const description = 'How Lookout is built to be secure: outbound-only agents, no shell calls, least privilege, constant-time auth, and data minimization.';
 ---
@@ -25,7 +26,7 @@ const description = 'How Lookout is built to be secure: outbound-only agents, no
 
   <h2>Your data stays yours</h2>
   <ul>
-    <li>Self-hosted, everything stays in your infrastructure — nothing is sent to us.</li>
+    <li>With an on-prem deployment, everything stays in your infrastructure — nothing is sent to us.</li>
     <li>Rotate the enrollment token any time.</li>
     <li>The dashboard is a single service you control; put SSO + MFA in front of it with Cloudflare Access or your proxy.</li>
   </ul>
@@ -34,5 +35,5 @@ const description = 'How Lookout is built to be secure: outbound-only agents, no
   <p>We harden Lookout, threat-model it, and scan dependencies — but no software is ever “zero vulnerabilities,” and we won’t claim it is. Likewise, Lookout is built to <em>align</em> with NIST CSF, HIPAA, SOC 2, and GDPR controls and to produce the evidence an auditor needs; compliance certification is an organizational audit process, not something software alone provides.</p>
 
   <h2>Reporting a vulnerability</h2>
-  <p>Please report security issues privately via GitHub Security Advisories on the <a href="https://github.com/jsdosanj/lookout">repository</a> — not in public issues.</p>
+  <p>Please report security issues privately by emailing <a href={CONTACT_MAILTO}>{CONTACT_EMAIL}</a>. We’ll acknowledge your report and keep you updated as we investigate.</p>
 </Docs>

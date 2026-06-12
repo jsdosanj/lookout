@@ -1,6 +1,6 @@
 # lookout-site
 
-Marketing website for **Lookout** — open-source IT infrastructure monitoring.
+Marketing website for **Lookout** — commercial IT infrastructure monitoring built for humans.
 
 Built with **Astro + Tailwind CSS**. The built site deploys to GitHub Pages at
 **https://jsdosanj.github.io/lookout-site/**.
@@ -10,19 +10,19 @@ Built with **Astro + Tailwind CSS**. The built site deploys to GitHub Pages at
 ```bash
 npm install
 npm run dev        # local dev server
-npm run build      # production build → ./dist
+npm run build      # production build → ./docs
 ```
 
 ## Deploy
 
-The production build is published to the `gh-pages` branch (GitHub Pages source).
+The production build is written to `./docs` on the `main` branch (GitHub Pages source).
 Because this is a project site, `astro.config.mjs` sets `base: '/lookout-site'`.
 
 ## Pricing
 
-The pricing model lives in [`docs/pricing.md`](docs/pricing.md).
+Lookout is a commercial product with three paid plans — Starter, Pro, and Enterprise —
+priced per monitored server. There is no free tier. See `src/pages/pricing.astro`.
 
-## Links
+## Contact
 
-- Product / agent + dashboard: https://github.com/jsdosanj/servmonitor
-- Live demo dashboard: https://jsdosanj.github.io/servmonitor/
+Sales and support: jasvantdosanjh@outlook.com

@@ -9,14 +9,12 @@ const description = 'Install the Lookout agent on Linux, Windows, or macOS, and 
   <h1>Install the agent</h1>
   <p>The agent is a single, dependency-free binary. It only makes <strong>outbound</strong> connections to your control plane — it never opens a port on the server, so there’s nothing to expose to the network.</p>
 
-  <h2>Build the binary</h2>
-  <p>Build once, then copy the binary to each server (or build per platform):</p>
-  <pre><code>{`# Linux
-GOOS=linux   GOARCH=amd64 go build -o lookout-agent       ./cmd/lookout-agent
-# Windows
-GOOS=windows GOARCH=amd64 go build -o lookout-agent.exe   ./cmd/lookout-agent
-# macOS (Apple Silicon)
-GOOS=darwin  GOARCH=arm64 go build -o lookout-agent-macos ./cmd/lookout-agent`}</code></pre>
+  <h2>Download the binary</h2>
+  <p>Download the signed agent for each platform from your dashboard’s downloads page, then copy it to each server:</p>
+  <pre><code>{`# the downloads page provides a per-platform binary:
+#   lookout-agent          Linux   (amd64 / arm64)
+#   lookout-agent.exe      Windows (amd64)
+#   lookout-agent-macos    macOS   (Apple Silicon / Intel)`}</code></pre>
 
   <h2>Linux (systemd)</h2>
   <p>Works on Ubuntu, Debian, RHEL, Rocky, CentOS, and AlmaLinux. Copy the binary, then create a service:</p>

@@ -1,5 +1,6 @@
 ---
 import Docs from '../../layouts/Docs.astro';
+import { CONTACT_EMAIL, CONTACT_MAILTO } from '../../consts';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const title = 'Lookout documentation';
 const description = 'Everything you need to install, run, and extend Lookout — written in plain English, with copy-paste commands.';
@@ -8,7 +9,7 @@ const cards = [
   { t: 'Getting started', d: 'From zero to your first report in 5 minutes.', href: `${base}docs/getting-started/` },
   { t: 'Install the agent', d: 'Linux, Windows, and macOS — step by step.', href: `${base}docs/install-agent/` },
   { t: 'Control plane', d: 'Run the dashboard that collects reports.', href: `${base}docs/control-plane/` },
-  { t: 'Self-hosting', d: 'Host the whole stack yourself, free.', href: `${base}docs/self-hosting/` },
+  { t: 'On-prem deployment', d: 'Run the whole stack inside your own network.', href: `${base}docs/self-hosting/` },
   { t: 'Using the dashboard', d: 'Read health, drill into a server.', href: `${base}docs/dashboard/` },
   { t: 'Alerts', d: 'Get told before something breaks.', href: `${base}docs/alerts/` },
   { t: 'Plugins & custom checks', d: 'Extend Lookout with your own checks.', href: `${base}docs/plugins/` },
@@ -19,9 +20,9 @@ const cards = [
 <Docs title={title} description={description}>
   <h1>Documentation</h1>
   <p>
-    Lookout is open-source IT infrastructure monitoring. You install a small <strong>agent</strong> on each server and run a
-    <strong>control plane</strong> that collects reports and shows a plain-English health dashboard. This documentation takes
-    you from install to alerting to writing your own checks — no security background required.
+    Lookout is commercial IT infrastructure monitoring. You install a small <strong>agent</strong> on each server and connect it to a
+    <strong>control plane</strong> — hosted by us, or deployed on-prem — that collects reports and shows a plain-English health dashboard.
+    This documentation takes you from install to alerting to writing your own checks — no security background required.
   </p>
   <p>New here? Start with <a href={`${base}docs/getting-started/`}>Getting started</a>.</p>
 
@@ -33,4 +34,12 @@ const cards = [
       </a>
     ))}
   </div>
+
+  <h2>Support</h2>
+  <p>
+    Need a hand with setup, alerts, or an on-prem deployment? Email our team at
+    <a href={CONTACT_MAILTO}>{CONTACT_EMAIL}</a> and a human will get back to you. Pricing questions are
+    answered on the <a href={`${base}pricing/`}>pricing page</a>, and common questions are covered in the
+    <a href={`${base}docs/faq/`}>FAQ</a>.
+  </p>
 </Docs>

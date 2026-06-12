@@ -1,11 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
-import { GITHUB_URL } from '../consts';
+import { CONTACT_EMAIL, CONTACT_MAILTO } from '../consts';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 const title = 'Contact — Lookout';
 const description =
-  'Get in touch with the Lookout team. Questions about self-hosting, hosted plans, security, or just want to say hello? Send us a message.';
+  'Get in touch with the Lookout team. Questions about managed plans, on-prem deployment, security, or pricing? Send us a message.';
 ---
 
 <Base title={title} description={description}>
@@ -18,7 +18,7 @@ const description =
           Let's <span class="bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent">talk.</span>
         </h1>
         <p class="mx-auto mt-6 max-w-xl text-pretty text-lg text-slate-300">
-          Questions about self-hosting, hosted plans, security, or a custom deployment? Drop us a line and a human will get back to you.
+          Questions about managed plans, on-prem deployment, security, or pricing? Drop us a line and a human will get back to you.
         </p>
       </div>
     </div>
@@ -78,7 +78,7 @@ const description =
     </div>
 
     <p class="mt-8 text-center text-sm text-slate-500">
-      Prefer the source? Open an issue on <a href={GITHUB_URL} class="font-semibold text-indigo-400 hover:text-indigo-300">GitHub</a>.
+      Prefer email? Reach us directly at <a href={CONTACT_MAILTO} class="font-semibold text-indigo-400 hover:text-indigo-300">{CONTACT_EMAIL}</a>.
     </p>
   </section>
 
