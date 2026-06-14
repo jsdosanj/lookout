@@ -108,6 +108,10 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding:2rem}
 .guide{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:.9rem}
 .guide h4{margin:0 0 .3rem}.guide p{color:var(--muted);margin:0;font-size:.92rem}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.9rem 1.1rem;margin-bottom:.6rem;max-width:520px}
+.alert-table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.88rem;margin-bottom:.6rem}
+.alert-table th,.alert-table td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--line)}
+.alert-table th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
+.alert-table tr:last-child td{border-bottom:none}
 @media(max-width:820px){.app{flex-direction:column}.side{width:auto;flex:none;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:.4rem}.sidenav{flex-direction:row;flex-wrap:wrap;margin:0}.side-foot{margin:0 0 0 auto;flex-direction:row;border:none;padding:0}.content{padding:1.2rem}}
 `
 
@@ -161,7 +165,8 @@ const dashBody = `
     <code>lookout-agent run --server http://THIS_HOST:8080 --token YOUR_TOKEN</code></div>
   {{end}}
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<!-- TODO(security): pin an exact chart.js version and add an integrity="sha384-..." SRI hash. The "@4" tag floats across patch releases, so no fixed hash is correct; the CSP host allowlist is the current safeguard. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" crossorigin="anonymous"></script>
 <script>
   const OS = {{.OSDistJSON}};
   if (window.Chart && document.getElementById('osChart') && OS.labels && OS.labels.length) {
@@ -242,7 +247,8 @@ const detailBody = `
     s.addEventListener('input',function(){var q=s.value.toLowerCase();Array.prototype.slice.call(t.rows,1).forEach(function(r){
       r.style.display=r.cells[0].textContent.toLowerCase().indexOf(q)>=0?'':'none';});});})();</script>{{end}}
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<!-- TODO(security): pin an exact chart.js version and add an integrity="sha384-..." SRI hash. The "@4" tag floats across patch releases, so no fixed hash is correct; the CSP host allowlist is the current safeguard. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" crossorigin="anonymous"></script>
 <script>
   const D = {{.ChartData}};
   if (window.Chart && document.getElementById('perf') && D.labels.length) {
@@ -285,7 +291,7 @@ const shellTop = `<div class="app">
   </aside>{{end}}
   <main class="content">
   {{if .UserEmail}}<div class="topbar"><div>{{if .Static}}<span class="tb-role" style="background:rgba(245,158,11,.15);color:var(--warn)">Live demo</span>{{end}}</div>
-    <div class="tb-acct"><span class="tb-role">{{.UserRole}}</span><a href="{{if .Static}}#{{else}}/account{{end}}" title="Account">{{.UserEmail}}</a>{{if not .Static}}<form method="post" action="/logout" style="margin:0"><button class="linkbtn">Sign out</button></form>{{end}}</div>
+    <div class="tb-acct"><span class="tb-role">{{.UserRole}}</span><a href="{{if .Static}}#{{else}}/account{{end}}" title="Account">{{.UserEmail}}</a>{{if not .Static}}<form method="post" action="/logout" style="margin:0">{{.CSRF}}<button class="linkbtn">Sign out</button></form>{{end}}</div>
   </div>{{end}}`
 
 const shellBottom = `</main></div></body></html>`

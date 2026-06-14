@@ -33,6 +33,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>Avery Admin</td>
       <td>
         <form class="inline" method="post" action="/admin/users/role">
+          
           <input type="hidden" name="id" value="u1">
           <select name="role" onchange="this.form.submit()"><option value="owner" selected>owner</option><option value="admin" >admin</option><option value="operator" >operator</option><option value="viewer" >viewer</option></select>
         </form>
@@ -42,6 +43,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>
         <details><summary>Edit</summary>
           <form method="post" action="/admin/users/org" style="margin-top:.5rem;min-width:220px">
+            
             <input type="hidden" name="id" value="u1">
             <label>Department</label><select name="department"><option value="">—</option><option value="d1" >Engineering</option><option value="d2" selected>IT Operations</option></select>
             <label>Location</label><select name="location"><option value="">—</option><option value="l1" selected>HQ — Building A</option><option value="l2" >Data Center West</option></select>
@@ -53,6 +55,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>
         
         <form class="inline" method="post" action="/admin/users/disable">
+          
           <input type="hidden" name="id" value="u1">
           <input type="hidden" name="disabled" value="true">
           <button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">Disable</button>
@@ -65,6 +68,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>Sam Operator</td>
       <td>
         <form class="inline" method="post" action="/admin/users/role">
+          
           <input type="hidden" name="id" value="u2">
           <select name="role" onchange="this.form.submit()"><option value="owner" >owner</option><option value="admin" >admin</option><option value="operator" selected>operator</option><option value="viewer" >viewer</option></select>
         </form>
@@ -74,6 +78,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>
         <details><summary>Edit</summary>
           <form method="post" action="/admin/users/org" style="margin-top:.5rem;min-width:220px">
+            
             <input type="hidden" name="id" value="u2">
             <label>Department</label><select name="department"><option value="">—</option><option value="d1" selected>Engineering</option><option value="d2" >IT Operations</option></select>
             <label>Location</label><select name="location"><option value="">—</option><option value="l1" selected>HQ — Building A</option><option value="l2" >Data Center West</option></select>
@@ -85,6 +90,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>
         
         <form class="inline" method="post" action="/admin/users/disable">
+          
           <input type="hidden" name="id" value="u2">
           <input type="hidden" name="disabled" value="true">
           <button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">Disable</button>
@@ -97,6 +103,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>Val Viewer</td>
       <td>
         <form class="inline" method="post" action="/admin/users/role">
+          
           <input type="hidden" name="id" value="u3">
           <select name="role" onchange="this.form.submit()"><option value="owner" >owner</option><option value="admin" >admin</option><option value="operator" >operator</option><option value="viewer" selected>viewer</option></select>
         </form>
@@ -106,6 +113,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>
         <details><summary>Edit</summary>
           <form method="post" action="/admin/users/org" style="margin-top:.5rem;min-width:220px">
+            
             <input type="hidden" name="id" value="u3">
             <label>Department</label><select name="department"><option value="">—</option><option value="d1" >Engineering</option><option value="d2" >IT Operations</option></select>
             <label>Location</label><select name="location"><option value="">—</option><option value="l1" >HQ — Building A</option><option value="l2" >Data Center West</option></select>
@@ -117,6 +125,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
       <td>
         
         <form class="inline" method="post" action="/admin/users/disable">
+          
           <input type="hidden" name="id" value="u3">
           <input type="hidden" name="disabled" value="true">
           <button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">Disable</button>
@@ -127,6 +136,7 @@ summary{cursor:pointer;color:#818cf8}select[multiple]{height:auto}</style></head
   </table>
   <h3 style="margin-top:1.6rem">Add a user</h3>
   <form method="post" action="/admin/users/create">
+    
     <div class="row" style="flex-wrap:wrap">
       <div style="flex:1;min-width:170px"><label>Email</label><input name="email" type="email" required></div>
       <div style="flex:1;min-width:140px"><label>Name</label><input name="name"></div>

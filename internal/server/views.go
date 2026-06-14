@@ -29,6 +29,7 @@ type dashView struct {
 	UserEmail                    string
 	UserRole                     string
 	CanManageUsers               bool
+	CSRF                         template.HTML
 }
 
 type cardView struct {
@@ -55,6 +56,7 @@ type detailView struct {
 	UserEmail                                string
 	UserRole                                 string
 	CanManageUsers                           bool
+	CSRF                                     template.HTML
 	OS, Platform, Version, Kernel, Arch, CPU string
 	Virtualization, Encryption               string
 	Cores                                    int
@@ -94,6 +96,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		dv.UserEmail = u.Email
 		dv.UserRole = string(u.Role)
 		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
+		dv.CSRF = csrfField(auth.CSRFToken(r))
 	}
 	render(w, dashboardTmpl, dv)
 }
@@ -110,6 +113,7 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 		dv.UserEmail = u.Email
 		dv.UserRole = string(u.Role)
 		dv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
+		dv.CSRF = csrfField(auth.CSRFToken(r))
 	}
 	render(w, detailTmpl, dv)
 }
@@ -203,15 +207,15 @@ func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
 		back = "index.html"
 	}
 	dv := detailView{
-		ID:          srv.ID,
-		BackHref:    back,
-		Chrome:      true,
-		Static:      static,
-		OS:          rep.Host.OS,
-		Platform:    rep.Host.Platform,
-		Version:     rep.Host.Version,
-		Kernel:      rep.Host.Kernel,
-		Arch:        rep.Host.Arch,
+		ID:             srv.ID,
+		BackHref:       back,
+		Chrome:         true,
+		Static:         static,
+		OS:             rep.Host.OS,
+		Platform:       rep.Host.Platform,
+		Version:        rep.Host.Version,
+		Kernel:         rep.Host.Kernel,
+		Arch:           rep.Host.Arch,
 		CPU:            rep.Specs.CPUModel,
 		Virtualization: rep.Host.Virtualization,
 		Encryption:     rep.Host.Encryption,

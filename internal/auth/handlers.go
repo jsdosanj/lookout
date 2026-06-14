@@ -5,33 +5,48 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 )
 
 // Mount registers all auth routes (login, MFA, account, admin users, OAuth) on mux.
 func (a *Auth) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("GET /login", a.loginPage)
-	mux.HandleFunc("POST /login", a.loginPost)
+	mux.HandleFunc("POST /login", a.csrf(a.loginPost))
 	mux.HandleFunc("GET /login/mfa", a.mfaPage)
-	mux.HandleFunc("POST /login/mfa", a.mfaPost)
-	mux.HandleFunc("POST /logout", a.logout)
+	mux.HandleFunc("POST /login/mfa", a.csrf(a.mfaPost))
+	mux.HandleFunc("POST /logout", a.csrf(a.logout))
 
 	mux.Handle("GET /account", a.RequireAuth(http.HandlerFunc(a.accountPage)))
-	mux.Handle("POST /account/mfa/begin", a.RequireAuth(http.HandlerFunc(a.mfaBegin)))
-	mux.Handle("POST /account/mfa/enable", a.RequireAuth(http.HandlerFunc(a.mfaEnable)))
-	mux.Handle("POST /account/mfa/disable", a.RequireAuth(http.HandlerFunc(a.mfaDisable)))
+	mux.Handle("POST /account/mfa/begin", a.RequireAuth(a.csrf(a.mfaBegin)))
+	mux.Handle("POST /account/mfa/enable", a.RequireAuth(a.csrf(a.mfaEnable)))
+	mux.Handle("POST /account/mfa/disable", a.RequireAuth(a.csrf(a.mfaDisable)))
 
 	admin := func(h http.HandlerFunc) http.Handler { return a.RequirePermission(PermManageUsers, h) }
 	mux.Handle("GET /admin/users", admin(a.usersPage))
-	mux.Handle("POST /admin/users/create", admin(a.userCreate))
-	mux.Handle("POST /admin/users/role", admin(a.userRole))
-	mux.Handle("POST /admin/users/disable", admin(a.userDisable))
-	mux.Handle("POST /admin/users/org", admin(a.userOrg))
+	mux.Handle("POST /admin/users/create", admin(a.csrf(a.userCreate)))
+	mux.Handle("POST /admin/users/role", admin(a.csrf(a.userRole)))
+	mux.Handle("POST /admin/users/disable", admin(a.csrf(a.userDisable)))
+	mux.Handle("POST /admin/users/org", admin(a.csrf(a.userOrg)))
 	mux.Handle("GET /admin/org/{kind}", admin(a.orgPage))
-	mux.Handle("POST /admin/org/{kind}/create", admin(a.orgCreate))
-	mux.Handle("POST /admin/org/{kind}/delete", admin(a.orgDelete))
+	mux.Handle("POST /admin/org/{kind}/create", admin(a.csrf(a.orgCreate)))
+	mux.Handle("POST /admin/org/{kind}/delete", admin(a.csrf(a.orgDelete)))
 
 	mux.HandleFunc("GET /auth/{provider}/login", a.oauthLogin)
 	mux.HandleFunc("GET /auth/{provider}/callback", a.oauthCallback)
+}
+
+// csrf wraps a state-changing POST handler with synchronizer-token verification.
+// It parses the form (so r.FormValue works downstream) then rejects the request
+// if the token is missing or doesn't match the expected per-session/pre-auth token.
+func (a *Auth) csrf(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if !a.checkCSRF(r) {
+			http.Error(w, "invalid or missing CSRF token", http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
 }
 
 // ── login / logout ───────────────────────────────────────────────────────────
@@ -44,14 +59,28 @@ func (a *Auth) loginPage(w http.ResponseWriter, r *http.Request) {
 	render(w, loginTmpl, map[string]any{
 		"Err":       r.URL.Query().Get("err"),
 		"Providers": a.providerNames(),
+		"CSRF":      csrfField(a.csrfTokenFor(w, r)),
 	})
 }
 
 func (a *Auth) loginPost(w http.ResponseWriter, r *http.Request) {
-	u, err := a.store.Authenticate(r.FormValue("email"), r.FormValue("password"))
+	email := r.FormValue("email")
+	key := strings.ToLower(strings.TrimSpace(email)) + "|" + clientIP(r)
+	if a.loginLimiter.locked(key) {
+		http.Redirect(w, r, "/login?err=locked", http.StatusSeeOther)
+		return
+	}
+	u, err := a.store.Authenticate(email, r.FormValue("password"))
 	if err != nil {
+		a.loginLimiter.fail(key)
 		http.Redirect(w, r, "/login?err=bad", http.StatusSeeOther)
 		return
+	}
+	a.loginLimiter.reset(key)
+	// Session fixation: discard any session the visitor already presented before
+	// establishing the post-authentication one.
+	if c, err := r.Cookie(CookieName); err == nil && c.Value != "" {
+		_ = a.store.DeleteSession(c.Value)
 	}
 	mfaDone := !u.MFAEnabled
 	sess, err := a.store.CreateSession(u.ID, mfaDone)
@@ -73,7 +102,7 @@ func (a *Auth) mfaPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	render(w, mfaTmpl, map[string]any{"Err": r.URL.Query().Get("err")})
+	render(w, mfaTmpl, map[string]any{"Err": r.URL.Query().Get("err"), "CSRF": csrfField(a.csrfTokenFor(w, r))})
 }
 
 func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request) {
@@ -82,11 +111,33 @@ func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+	key := u.ID + "|" + clientIP(r)
+	if a.mfaLimiter.locked(key) {
+		// Too many bad codes: drop the pre-MFA session and force a fresh login.
+		_ = a.store.DeleteSession(sess.Token)
+		clearSessionCookie(w, a.secure)
+		http.Redirect(w, r, "/login?err=locked", http.StatusSeeOther)
+		return
+	}
 	if !ValidateTOTP(u.TOTPSecret, r.FormValue("code")) {
+		if a.mfaLimiter.fail(key) {
+			// Lockout reached on this attempt: invalidate the pre-MFA session.
+			_ = a.store.DeleteSession(sess.Token)
+			clearSessionCookie(w, a.secure)
+			http.Redirect(w, r, "/login?err=locked", http.StatusSeeOther)
+			return
+		}
 		http.Redirect(w, r, "/login/mfa?err=bad", http.StatusSeeOther)
 		return
 	}
-	_ = a.store.MarkSessionMFADone(sess.Token)
+	a.mfaLimiter.reset(key)
+	// Rotate the session token on the password→MFA privilege transition.
+	newSess, err := a.store.MarkSessionMFADone(sess.Token)
+	if err != nil {
+		http.Error(w, "session error", http.StatusInternalServerError)
+		return
+	}
+	setSessionCookie(w, newSess.Token, a.secure)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -102,7 +153,7 @@ func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {
 
 func (a *Auth) accountPage(w http.ResponseWriter, r *http.Request) {
 	u := CurrentUser(r)
-	render(w, accountTmpl, map[string]any{"User": u})
+	render(w, accountTmpl, map[string]any{"User": u, "CSRF": csrfField(a.csrfTokenFor(w, r))})
 }
 
 func (a *Auth) mfaBegin(w http.ResponseWriter, r *http.Request) {
@@ -115,6 +166,7 @@ func (a *Auth) mfaBegin(w http.ResponseWriter, r *http.Request) {
 	render(w, mfaSetupTmpl, map[string]any{
 		"Secret": secret,
 		"URI":    totpURI(a.issuer, u.Email, secret),
+		"CSRF":   csrfField(a.csrfTokenFor(w, r)),
 	})
 }
 
@@ -123,6 +175,7 @@ func (a *Auth) mfaEnable(w http.ResponseWriter, r *http.Request) {
 	if !ValidateTOTP(u.TOTPSecret, r.FormValue("code")) {
 		render(w, mfaSetupTmpl, map[string]any{
 			"Secret": u.TOTPSecret, "URI": totpURI(a.issuer, u.Email, u.TOTPSecret), "Err": "That code didn't match — try again.",
+			"CSRF": csrfField(a.csrfTokenFor(w, r)),
 		})
 		return
 	}
@@ -147,6 +200,7 @@ func (a *Auth) usersPage(w http.ResponseWriter, r *http.Request) {
 		"Locations":   a.store.ListOrgUnits("location"),
 		"Groups":      a.store.ListOrgUnits("group"),
 		"Err":         r.URL.Query().Get("err"),
+		"CSRF":        csrfField(a.csrfTokenFor(w, r)),
 	})
 }
 
@@ -190,6 +244,7 @@ func (a *Auth) orgPage(w http.ResponseWriter, r *http.Request) {
 		"DetailLabel": kindDetailLabel(kind),
 		"Units":       a.store.ListOrgUnits(kind),
 		"Err":         r.URL.Query().Get("err"),
+		"CSRF":        csrfField(a.csrfTokenFor(w, r)),
 	})
 }
 
