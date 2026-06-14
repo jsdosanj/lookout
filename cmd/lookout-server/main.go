@@ -3,11 +3,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/jsdosanj/lookout/internal/auth"
@@ -20,14 +23,20 @@ func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	data := flag.String("data", "lookout-data.json", "path to the server data file")
 	authData := flag.String("auth-data", "lookout-users.json", "path to the users/sessions file")
+	agentData := flag.String("agent-data", "lookout-agents.json", "path to the per-agent credentials file")
 	flag.Parse()
 
-	token := os.Getenv("LOOKOUT_TOKEN")                            // agent enrollment token
-	secureCookies := os.Getenv("LOOKOUT_SECURE_COOKIES") == "true" // set true behind TLS
+	token := os.Getenv("LOOKOUT_TOKEN")                                // shared agent enrollment token
+	requireAgent := os.Getenv("LOOKOUT_REQUIRE_AGENT_TOKEN") == "true" // lock down legacy shared token
+	secureCookies := os.Getenv("LOOKOUT_SECURE_COOKIES") == "true"     // set true behind TLS
 
 	st, err := store.Open(*data)
 	if err != nil {
 		log.Fatalf("open store: %v", err)
+	}
+	agents, err := store.OpenAgents(*agentData)
+	if err != nil {
+		log.Fatalf("open agent store: %v", err)
 	}
 	users, err := auth.Open(*authData)
 	if err != nil {
@@ -45,9 +54,14 @@ func main() {
 	}
 	n := notify.New(webhooks)
 
+	// Background session GC: sweep expired sessions until shutdown (clean exit).
+	stopGC := make(chan struct{})
+	users.StartSessionGC(10*time.Minute, stopGC)
+	defer close(stopGC)
+
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           server.New(st, token, a, n).Routes(),
+		Handler:           server.New(st, agents, token, requireAgent, a, n).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -55,10 +69,26 @@ func main() {
 	if token == "" {
 		log.Print("WARNING: LOOKOUT_TOKEN not set — agent reports are unauthenticated (dev only)")
 	}
+	if requireAgent {
+		log.Print("NOTE: LOOKOUT_REQUIRE_AGENT_TOKEN=true — legacy shared token is rejected on /report (per-agent tokens only)")
+	}
 	if !secureCookies {
 		log.Print("NOTE: LOOKOUT_SECURE_COOKIES != 'true' — cookies not marked Secure (run behind TLS in production)")
 	}
-	log.Fatal(srv.ListenAndServe())
+
+	// Graceful shutdown on SIGINT/SIGTERM so the GC goroutine and in-flight
+	// requests wind down cleanly.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("serve: %v", err)
+		}
+	}()
+	<-ctx.Done()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx)
 }
 
 // bootstrapOwner creates the first owner account on a fresh install from

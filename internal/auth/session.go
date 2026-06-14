@@ -26,6 +26,7 @@ type Session struct {
 	UserID  string    `json:"user_id"`
 	Expires time.Time `json:"expires"`
 	MFADone bool      `json:"mfa_done"`
+	CSRF    string    `json:"csrf"` // per-session synchronizer token for state-changing POSTs
 }
 
 func randomToken() string {
@@ -41,7 +42,7 @@ func (s *Store) CreateSession(userID string, mfaDone bool) (*Session, error) {
 	if !mfaDone {
 		ttl = preMFASessionTTL
 	}
-	sess := &Session{Token: randomToken(), UserID: userID, Expires: time.Now().Add(ttl).UTC(), MFADone: mfaDone}
+	sess := &Session{Token: randomToken(), UserID: userID, Expires: time.Now().Add(ttl).UTC(), MFADone: mfaDone, CSRF: randomToken()}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.sessions[sess.Token] = sess
@@ -75,9 +76,49 @@ func (s *Store) MarkSessionMFADone(token string) (*Session, error) {
 		return nil, fmt.Errorf("session not found")
 	}
 	delete(s.sessions, token)
-	sess := &Session{Token: randomToken(), UserID: old.UserID, Expires: time.Now().Add(sessionTTL).UTC(), MFADone: true}
+	sess := &Session{Token: randomToken(), UserID: old.UserID, Expires: time.Now().Add(sessionTTL).UTC(), MFADone: true, CSRF: randomToken()}
 	s.sessions[sess.Token] = sess
 	return sess, s.persist()
+}
+
+// gcExpiredSessions removes every session past its expiry and persists if any
+// were deleted. Returns the number removed.
+func (s *Store) gcExpiredSessions() int {
+	now := time.Now()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := 0
+	for tok, sess := range s.sessions {
+		if now.After(sess.Expires) {
+			delete(s.sessions, tok)
+			n++
+		}
+	}
+	if n > 0 {
+		_ = s.persist()
+	}
+	return n
+}
+
+// StartSessionGC runs a background sweep that deletes expired sessions on each
+// tick until stop is closed. It returns immediately; the goroutine exits cleanly
+// when stop is closed (no leak). interval <= 0 defaults to 10 minutes.
+func (s *Store) StartSessionGC(interval time.Duration, stop <-chan struct{}) {
+	if interval <= 0 {
+		interval = 10 * time.Minute
+	}
+	go func() {
+		t := time.NewTicker(interval)
+		defer t.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-t.C:
+				s.gcExpiredSessions()
+			}
+		}
+	}()
 }
 
 // DeleteSession logs out.

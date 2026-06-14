@@ -28,12 +28,23 @@ func (a *Auth) Store() *Store { return a.store }
 
 type ctxKey int
 
-const userKey ctxKey = 0
+const (
+	userKey ctxKey = iota
+	csrfKey
+)
 
 // CurrentUser returns the authenticated user attached by RequireAuth, or nil.
 func CurrentUser(r *http.Request) *User {
 	u, _ := r.Context().Value(userKey).(*User)
 	return u
+}
+
+// CSRFToken returns the current session's synchronizer token, attached by
+// RequireAuth. Handlers in other packages embed it in their POST forms (e.g. the
+// dashboard's sign-out form) so the form passes csrf verification.
+func CSRFToken(r *http.Request) string {
+	t, _ := r.Context().Value(csrfKey).(string)
+	return t
 }
 
 // load resolves the session + user from the request cookie.
@@ -66,7 +77,9 @@ func (a *Auth) RequireAuth(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/login/mfa", http.StatusSeeOther)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKey, u)))
+		ctx := context.WithValue(r.Context(), userKey, u)
+		ctx = context.WithValue(ctx, csrfKey, sess.CSRF)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

@@ -52,6 +52,7 @@ var loginTmpl = authTmpl(`
   <div class="logo">Look<b>out</b></div>
   {{if .Err}}<div class="err">{{if eq .Err "noaccount"}}No Lookout account for that identity — ask an admin to add you.{{else if eq .Err "state"}}Login session expired, please try again.{{else if eq .Err "sso"}}SSO sign-in failed. Try again.{{else if eq .Err "locked"}}Too many attempts. Please wait a few minutes and try again.{{else}}Sign-in failed. Check your email and password.{{end}}</div>{{end}}
   <form method="post" action="/login">
+    {{.CSRF}}
     <label>Email</label><input name="email" type="email" autocomplete="email" required>
     <label>Password</label><input name="password" type="password" autocomplete="current-password" required>
     <button class="btn" type="submit">Sign in</button>
@@ -66,6 +67,7 @@ var mfaTmpl = authTmpl(`
   <p class="muted">Enter the 6-digit code from your authenticator app.</p>
   {{if .Err}}<div class="err">That code didn't match. Try again.</div>{{end}}
   <form method="post" action="/login/mfa">
+    {{.CSRF}}
     <label>Authentication code</label><input name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" required autofocus>
     <button class="btn" type="submit">Verify</button>
   </form>
@@ -79,12 +81,12 @@ var accountTmpl = authTmpl(`
   <h3 style="margin-top:1.4rem">Two-factor authentication</h3>
   {{if .User.MFAEnabled}}
     <p class="muted">MFA is <b style="color:#22c55e">on</b>.</p>
-    <form method="post" action="/account/mfa/disable"><button class="btn ghost" type="submit">Turn off MFA</button></form>
+    <form method="post" action="/account/mfa/disable">{{.CSRF}}<button class="btn ghost" type="submit">Turn off MFA</button></form>
   {{else}}
     <p class="muted">Add a second factor with an authenticator app (Google Authenticator, 1Password, …).</p>
-    <form method="post" action="/account/mfa/begin"><button class="btn" type="submit">Set up MFA</button></form>
+    <form method="post" action="/account/mfa/begin">{{.CSRF}}<button class="btn" type="submit">Set up MFA</button></form>
   {{end}}
-  <form method="post" action="/logout"><button class="btn ghost" type="submit">Sign out</button></form>
+  <form method="post" action="/logout">{{.CSRF}}<button class="btn ghost" type="submit">Sign out</button></form>
 </div></div>`)
 
 var mfaSetupTmpl = authTmpl(`
@@ -96,6 +98,7 @@ var mfaSetupTmpl = authTmpl(`
   <label>Secret key</label><p><code>{{.Secret}}</code></p>
   <label>Setup link (otpauth)</label><p><code>{{.URI}}</code></p>
   <form method="post" action="/account/mfa/enable">
+    {{.CSRF}}
     <label>Current 6-digit code</label><input name="code" inputmode="numeric" pattern="[0-9]*" required autofocus>
     <button class="btn" type="submit">Enable MFA</button>
   </form>
@@ -115,6 +118,7 @@ var usersTmpl = authTmpl(`
       <td>{{.Name}}</td>
       <td>
         <form class="inline" method="post" action="/admin/users/role">
+          {{$.CSRF}}
           <input type="hidden" name="id" value="{{.ID}}">
           {{$r := .Role}}<select name="role" onchange="this.form.submit()">{{range $.Roles}}<option value="{{.}}" {{if eq . $r}}selected{{end}}>{{.}}</option>{{end}}</select>
         </form>
@@ -124,6 +128,7 @@ var usersTmpl = authTmpl(`
       <td>
         <details><summary>Edit</summary>
           <form method="post" action="/admin/users/org" style="margin-top:.5rem;min-width:220px">
+            {{$.CSRF}}
             <input type="hidden" name="id" value="{{.ID}}">
             <label>Department</label>{{$d := .DepartmentID}}<select name="department"><option value="">—</option>{{range $.Departments}}<option value="{{.ID}}" {{if eq .ID $d}}selected{{end}}>{{.Name}}</option>{{end}}</select>
             <label>Location</label>{{$l := .LocationID}}<select name="location"><option value="">—</option>{{range $.Locations}}<option value="{{.ID}}" {{if eq .ID $l}}selected{{end}}>{{.Name}}</option>{{end}}</select>
@@ -135,6 +140,7 @@ var usersTmpl = authTmpl(`
       <td>
         {{if ne .ID $.Me.ID}}
         <form class="inline" method="post" action="/admin/users/disable">
+          {{$.CSRF}}
           <input type="hidden" name="id" value="{{.ID}}">
           <input type="hidden" name="disabled" value="{{if .Disabled}}false{{else}}true{{end}}">
           <button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">{{if .Disabled}}Enable{{else}}Disable{{end}}</button>
@@ -145,6 +151,7 @@ var usersTmpl = authTmpl(`
   </table>
   <h3 style="margin-top:1.6rem">Add a user</h3>
   <form method="post" action="/admin/users/create">
+    {{.CSRF}}
     <div class="row" style="flex-wrap:wrap">
       <div style="flex:1;min-width:170px"><label>Email</label><input name="email" type="email" required></div>
       <div style="flex:1;min-width:140px"><label>Name</label><input name="name"></div>
@@ -163,11 +170,12 @@ var orgTmpl = authTmpl(`
   {{if .Units}}
   <table><tr><th>Name</th><th>{{.DetailLabel}}</th><th></th></tr>
     {{range .Units}}<tr><td><b>{{.Name}}</b></td><td class="muted">{{.Detail}}</td>
-      <td><form class="inline" method="post" action="/admin/org/{{.Kind}}/delete"><input type="hidden" name="id" value="{{.ID}}"><button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">Delete</button></form></td></tr>{{end}}
+      <td><form class="inline" method="post" action="/admin/org/{{.Kind}}/delete">{{$.CSRF}}<input type="hidden" name="id" value="{{.ID}}"><button class="btn ghost" style="width:auto;margin:0;padding:.3rem .6rem">Delete</button></form></td></tr>{{end}}
   </table>
   {{else}}<p class="muted">None yet — add one below.</p>{{end}}
   <h3 style="margin-top:1.4rem">Add</h3>
   <form method="post" action="/admin/org/{{.Kind}}/create">
+    {{.CSRF}}
     <div class="row" style="flex-wrap:wrap">
       <div style="flex:1;min-width:160px"><label>Name</label><input name="name" required></div>
       <div style="flex:2;min-width:200px"><label>{{.DetailLabel}}</label><input name="detail"></div>

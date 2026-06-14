@@ -16,9 +16,50 @@ import (
 // Config controls how the agent reports.
 type Config struct {
 	ServerURL string
-	Token     string
+	Token     string // per-agent token if enrolled, else the shared enrollment token
 	Interval  time.Duration
 	Once      bool
+}
+
+// enrollResponse is the control plane's reply to POST /api/v1/agents/enroll.
+type enrollResponse struct {
+	AgentID    string `json:"agent_id"`
+	AgentToken string `json:"agent_token"`
+}
+
+// Enroll exchanges the shared enrollment token for a per-agent token bound to a
+// server-assigned identity. The caller persists the returned token and reports
+// with it thereafter. serverURL and sharedToken are required.
+func Enroll(ctx context.Context, serverURL, sharedToken, hostname string) (agentID, agentToken string, err error) {
+	if serverURL == "" {
+		return "", "", fmt.Errorf("--server is required to enroll")
+	}
+	body, err := json.Marshal(map[string]string{"hostname": hostname})
+	if err != nil {
+		return "", "", err
+	}
+	url := strings.TrimRight(serverURL, "/") + "/api/v1/agents/enroll"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if sharedToken != "" {
+		req.Header.Set("Authorization", "Bearer "+sharedToken)
+	}
+	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return "", "", fmt.Errorf("enroll: control plane returned %s", resp.Status)
+	}
+	var er enrollResponse
+	if err := json.NewDecoder(resp.Body).Decode(&er); err != nil {
+		return "", "", fmt.Errorf("enroll: decode response: %w", err)
+	}
+	return er.AgentID, er.AgentToken, nil
 }
 
 // Run reports once (Once) or on Interval until ctx is cancelled. Transient

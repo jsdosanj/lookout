@@ -1,6 +1,7 @@
 package server
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/jsdosanj/lookout/internal/auth"
@@ -15,6 +16,7 @@ type pageView struct {
 	UserEmail      string
 	UserRole       string
 	CanManageUsers bool
+	CSRF           template.HTML
 }
 
 type intGroup struct {
@@ -40,6 +42,7 @@ func (s *Server) page(active string, r *http.Request) pageView {
 		pv.UserEmail = u.Email
 		pv.UserRole = string(u.Role)
 		pv.CanManageUsers = u.Role.Can(auth.PermManageUsers)
+		pv.CSRF = csrfField(auth.CSRFToken(r))
 	}
 	return pv
 }

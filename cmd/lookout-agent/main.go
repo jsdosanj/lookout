@@ -18,6 +18,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
@@ -67,7 +68,8 @@ func main() {
 func run(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	server := fs.String("server", "", "control plane URL, e.g. http://monitor.example.com:8080")
-	token := fs.String("token", "", "enrollment token (or set LOOKOUT_TOKEN)")
+	token := fs.String("token", "", "shared enrollment token (or set LOOKOUT_TOKEN)")
+	tokenFile := fs.String("token-file", defaultAgentTokenFile(), "path to the per-agent token (created on first enroll)")
 	interval := fs.Duration("interval", time.Minute, "how often to report")
 	once := fs.Bool("once", false, "report once and exit")
 	if err := fs.Parse(args); err != nil {
@@ -79,7 +81,47 @@ func run(args []string) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return agent.Run(ctx, agent.Config{ServerURL: *server, Token: *token, Interval: *interval, Once: *once})
+
+	// Per-agent token, migration-safe: reuse the stored token if present,
+	// otherwise enroll once with the shared token and persist the result. If
+	// enrollment isn't possible (no shared token / older control plane), fall
+	// back to reporting with the shared token (legacy behavior).
+	reportToken := *token
+	if t, err := loadAgentToken(*tokenFile); err == nil && t != "" {
+		reportToken = t
+	} else if *token != "" {
+		hostname, _ := os.Hostname()
+		if _, at, err := agent.Enroll(ctx, *server, *token, hostname); err == nil {
+			if err := saveAgentToken(*tokenFile, at); err != nil {
+				fmt.Fprintln(os.Stderr, "lookout-agent: could not persist agent token:", err)
+			}
+			reportToken = at
+		} else {
+			fmt.Fprintln(os.Stderr, "lookout-agent: enroll failed, using shared token:", err)
+		}
+	}
+
+	return agent.Run(ctx, agent.Config{ServerURL: *server, Token: reportToken, Interval: *interval, Once: *once})
+}
+
+// defaultAgentTokenFile picks a per-user path for the persisted per-agent token.
+func defaultAgentTokenFile() string {
+	return filepath.Join(defaultStateDir(), "agent-token")
+}
+
+func loadAgentToken(path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(b)), nil
+}
+
+func saveAgentToken(path, token string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(token+"\n"), 0o600)
 }
 
 // collectCmd drives the Universal Collector pipeline (Wave-0 reference
