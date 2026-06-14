@@ -83,6 +83,15 @@ func (a *Auth) RequireAuth(next http.Handler) http.Handler {
 	})
 }
 
+// ProtectPost guards a state-changing POST handler with both a permission check
+// and CSRF synchronizer-token verification. It is the exported form other
+// packages use to register their own authenticated POST endpoints (the dashboard
+// alert-rule and acknowledge actions) with the same protections as the auth
+// package's own forms.
+func (a *Auth) ProtectPost(p Permission, h http.HandlerFunc) http.Handler {
+	return a.RequirePermission(p, a.csrf(h))
+}
+
 // RequirePermission allows the request only if the user has the permission.
 func (a *Auth) RequirePermission(p Permission, next http.Handler) http.Handler {
 	return a.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

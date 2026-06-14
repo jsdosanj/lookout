@@ -25,6 +25,7 @@ func main() {
 	data := flag.String("data", "lookout-data.json", "path to the server data file")
 	authData := flag.String("auth-data", "lookout-users.json", "path to the users/sessions file")
 	agentData := flag.String("agent-data", "lookout-agents.json", "path to the per-agent credentials file")
+	ruleData := flag.String("rule-data", "lookout-rules.json", "path to the alert-rules file")
 	flag.Parse()
 
 	token := os.Getenv("LOOKOUT_TOKEN")                                // shared agent enrollment token
@@ -47,19 +48,28 @@ func main() {
 
 	a := auth.New(users, secureCookies, "Lookout")
 	// Build the alert engine: webhook channels from LOOKOUT_ALERT_WEBHOOKS
-	// (comma-separated, each SSRF-validated) plus a default fleet rule that fires
-	// at warning+ with flap-damping and a 30-minute escalation reminder.
+	// (comma-separated, each SSRF-validated) plus persisted, dashboard-editable
+	// rules seeded with a fleet warning+ rule (flap-damping + 30-minute reminder).
 	recorder := alert.NewRecorder(50)
-	eng := buildAlertEngine(recorder)
+	eng, rules := buildAlertEngine(recorder, *ruleData)
 
 	// Background session GC: sweep expired sessions until shutdown (clean exit).
 	stopGC := make(chan struct{})
 	users.StartSessionGC(10*time.Minute, stopGC)
 	defer close(stopGC)
 
+	ctrl := server.New(st, agents, token, requireAgent, a, eng, recorder, rules)
+
+	// Stale-host sweeper: re-evaluate the fleet on a cadence so a host that goes
+	// silent (and turns "stale" after store.StaleAfter) actually fires an alert.
+	// Without this, alerts only fire on report ingest and silent hosts never alert.
+	stopSweep := make(chan struct{})
+	ctrl.StartSweeper(time.Minute, stopSweep)
+	defer close(stopSweep)
+
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           server.New(st, agents, token, requireAgent, a, eng, recorder).Routes(),
+		Handler:           ctrl.Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -92,13 +102,15 @@ func main() {
 // buildAlertEngine wires the alert engine from environment configuration:
 //   - LOOKOUT_ALERT_WEBHOOKS: comma-separated Slack/Teams/generic webhook URLs.
 //     Each is SSRF-validated; an unsafe or unreachable URL is logged and skipped.
-//   - LOOKOUT_ALERT_EMAIL: comma-separated recipient addresses (channel is
-//     configured but SMTP delivery is not yet wired — see internal/alert).
+//   - LOOKOUT_ALERT_EMAIL: comma-separated recipient addresses. Live delivery
+//     goes through the shared notification service (LOOKOUT_NOTIFY_SERVICE_URL +
+//     LOOKOUT_NOTIFY_SERVICE_TOKEN, the POST /notify/send platform contract); if
+//     the service isn't configured it falls back to the local EmailChannel, whose
+//     send is an explicit not-configured error rather than a fake success.
 //
-// When any channel is configured, a default "fleet" rule fires on every server
-// at warning severity or above, with 2-observation flap-damping and a 30-minute
-// escalation reminder for unresolved incidents.
-func buildAlertEngine(rec *alert.Recorder) *alert.Engine {
+// Rules are loaded from ruleData (seeded with a fleet warning+ rule on first run)
+// and are editable from the dashboard.
+func buildAlertEngine(rec *alert.Recorder, ruleData string) (*alert.Engine, *alert.RuleStore) {
 	var channels []alert.Channel
 	var channelIDs []string
 
@@ -128,28 +140,50 @@ func buildAlertEngine(rec *alert.Recorder) *alert.Engine {
 		}
 	}
 	if len(emailTo) > 0 {
-		// SMTP creds not yet wired: channel is registered so rules/UI reference it,
-		// but Send returns an explicit not-configured error (no fake success).
-		channels = append(channels, alert.NewEmailChannel("email", emailTo, nil))
-		channelIDs = append(channelIDs, "email")
+		svcURL := strings.TrimSpace(os.Getenv("LOOKOUT_NOTIFY_SERVICE_URL"))
+		svcTok := strings.TrimSpace(os.Getenv("LOOKOUT_NOTIFY_SERVICE_TOKEN"))
+		if svcURL != "" && svcTok != "" {
+			// Production transport: deliver email through the shared notification
+			// service (it owns the provider key, dedupe, retry, and audit log).
+			if ch, err := alert.NewNotifyServiceChannel("email", svcURL, svcTok, emailTo); err != nil {
+				log.Printf("alert email via notify service rejected: %v", err)
+			} else {
+				channels = append(channels, ch)
+				channelIDs = append(channelIDs, "email")
+				log.Print("alert email: live delivery via shared notification service")
+			}
+		}
+		if !containsID(channelIDs, "email") {
+			// Fallback: register the local channel so rules/UI reference "email";
+			// its Send returns an explicit not-configured error (no fake success).
+			channels = append(channels, alert.NewEmailChannel("email", emailTo, nil))
+			channelIDs = append(channelIDs, "email")
+			log.Print("NOTE: alert email recipients set but notify service not configured — set LOOKOUT_NOTIFY_SERVICE_URL/_TOKEN for live delivery")
+		}
 	}
 
 	if len(channels) == 0 {
 		log.Print("NOTE: no alert channels configured — set LOOKOUT_ALERT_WEBHOOKS to enable alerting")
-		return nil
+		return nil, nil
 	}
 
-	rules := []alert.Rule{{
-		ID:          "fleet-default",
-		Name:        "Fleet: warning and above",
-		Server:      "*",
-		MinSeverity: alert.SevWarning,
-		Channels:    channelIDs,
-		FlapWindow:  2,
-		RepeatEvery: 30 * time.Minute,
-	}}
-	log.Printf("alerting enabled: %d channel(s), %d rule(s)", len(channels), len(rules))
-	return alert.NewEngine(rules, channels, rec.Log)
+	rules, err := alert.OpenRuleStore(ruleData, channelIDs)
+	if err != nil {
+		log.Fatalf("open rule store: %v", err)
+	}
+	ruleSet := rules.Rules()
+	log.Printf("alerting enabled: %d channel(s), %d rule(s)", len(channels), len(ruleSet))
+	return alert.NewEngine(ruleSet, channels, rec.Log), rules
+}
+
+// containsID reports whether id is already in ids.
+func containsID(ids []string, id string) bool {
+	for _, x := range ids {
+		if x == id {
+			return true
+		}
+	}
+	return false
 }
 
 // bootstrapOwner creates the first owner account on a fresh install from

@@ -25,15 +25,16 @@ type Server struct {
 	auth         *auth.Auth        // user auth; nil disables login (dev only)
 	alerts       *alert.Engine     // alert rule engine + delivery; may be nil
 	activity     *alert.Recorder   // recent alert deliveries for the UI; may be nil
+	rules        *alert.RuleStore  // persisted, dashboard-editable rules; may be nil
 }
 
 // New creates a control-plane server. token authenticates agents; a authenticates
 // dashboard users (pass nil for no-login dev mode); eng evaluates alert rules and
 // delivers notifications (may be nil); rec exposes recent deliveries to the UI
-// (may be nil). ag holds per-agent credentials; requireAgent locks down the
-// legacy shared token.
-func New(st *store.Store, ag *store.AgentStore, token string, requireAgent bool, a *auth.Auth, eng *alert.Engine, rec *alert.Recorder) *Server {
-	return &Server{store: st, agents: ag, token: token, requireAgent: requireAgent, auth: a, alerts: eng, activity: rec}
+// (may be nil); rs persists dashboard-editable rules (may be nil). ag holds
+// per-agent credentials; requireAgent locks down the legacy shared token.
+func New(st *store.Store, ag *store.AgentStore, token string, requireAgent bool, a *auth.Auth, eng *alert.Engine, rec *alert.Recorder, rs *alert.RuleStore) *Server {
+	return &Server{store: st, agents: ag, token: token, requireAgent: requireAgent, auth: a, alerts: eng, activity: rec, rules: rs}
 }
 
 // Routes returns the HTTP handler for the control plane.
@@ -62,6 +63,12 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("GET /integrations", view(s.handleIntegrations))
 	mux.Handle("GET /integrations/{id}", view(s.handleIntegrationDetail))
 	mux.Handle("GET /notifications", view(s.handleNotifications))
+	// Alert-rule and acknowledgement actions: editing alerting is privileged and
+	// CSRF-protected (state-changing POSTs from the dashboard).
+	manage := func(h http.HandlerFunc) http.Handler { return s.auth.ProtectPost(auth.PermManageAlerts, h) }
+	mux.Handle("POST /notifications/rules/save", manage(s.handleRuleSave))
+	mux.Handle("POST /notifications/rules/delete", manage(s.handleRuleDelete))
+	mux.Handle("POST /notifications/ack", manage(s.handleAck))
 	mux.Handle("GET /settings", view(s.handleSettings))
 	mux.Handle("GET /{$}", view(s.handleDashboard))
 	return securityHeaders(mux)
@@ -168,6 +175,46 @@ func (s *Server) maybeAlert(id string, now time.Time) {
 		reason = h.Reasons[0]
 	}
 	s.alerts.Observe(id, h.Status, reason, now)
+}
+
+// Sweep re-evaluates every known server's health at time now and feeds it to the
+// alert engine. This is what makes a SILENT host alert: alerts otherwise fire
+// only on report ingest, so a host that stops reporting (and thus turns "stale"
+// after StaleAfter) would never trigger anything without this periodic pass. The
+// engine's dedupe means a sweep that finds nothing newly wrong is a no-op.
+func (s *Server) Sweep(now time.Time) {
+	if !s.alerts.Enabled() {
+		return
+	}
+	for _, srv := range s.store.List() {
+		h := store.Evaluate(srv, now)
+		reason := ""
+		if len(h.Reasons) > 0 {
+			reason = h.Reasons[0]
+		}
+		s.alerts.Observe(srv.ID, h.Status, reason, now)
+	}
+}
+
+// StartSweeper runs Sweep on an interval until stop is closed. It is the
+// background half of stale detection (the report path covers live hosts; this
+// covers hosts that have gone silent).
+func (s *Server) StartSweeper(every time.Duration, stop <-chan struct{}) {
+	if !s.alerts.Enabled() || every <= 0 {
+		return
+	}
+	go func() {
+		t := time.NewTicker(every)
+		defer t.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case now := <-t.C:
+				s.Sweep(now.UTC())
+			}
+		}
+	}()
 }
 
 // bearer extracts the token from an "Authorization: Bearer <token>" header.

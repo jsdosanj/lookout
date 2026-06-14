@@ -15,6 +15,7 @@ package alert
 
 import (
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -95,6 +96,12 @@ type incident struct {
 	firstFired time.Time // when the incident first notified
 	lastFired  time.Time // when we last notified (for RepeatEvery)
 	reason     string
+	// ackedUntil suppresses RepeatEvery reminders for an acknowledged incident.
+	// Zero = not acknowledged; a future time = snoozed until then; a far-future
+	// time (set by an open-ended ack) = silenced for the life of this incident.
+	// Acknowledgement is per-incident: a fresh incident (or a severity change)
+	// clears it so a worsening problem still re-alerts.
+	ackedUntil time.Time
 }
 
 // flap tracks consecutive observations of one (rule,server) for flap-damping.
@@ -146,6 +153,15 @@ func (e *Engine) Enabled() bool {
 }
 
 func key(ruleID, server string) string { return ruleID + "|" + server }
+
+// splitKey reverses key. Rule IDs never contain "|", so the first separator
+// splits rule from server.
+func splitKey(k string) (ruleID, server string) {
+	if i := strings.IndexByte(k, '|'); i >= 0 {
+		return k[:i], k[i+1:]
+	}
+	return k, ""
+}
 
 // Observe feeds one health observation for a server into the engine and delivers
 // any notifications the rules call for. now is the observation time (injected so
@@ -233,14 +249,22 @@ func (e *Engine) evalRule(r Rule, server string, sev Severity, reason string, no
 
 	case confirmed != inc.severity:
 		// Severity escalated or de-escalated while still unhealthy: fire the change.
+		// A new severity is a new state, so any prior acknowledgement is cleared —
+		// a worsening problem must re-alert even if the earlier level was acked.
 		inc.severity = confirmed
 		inc.lastFired = now
 		inc.reason = reason
+		inc.ackedUntil = time.Time{}
 		return []sendJob{{
 			n: Notification{RuleID: r.ID, RuleName: r.Name, Server: server,
 				Severity: confirmed.String(), Reason: reason, At: now},
 			channels: r.Channels,
 		}}
+
+	case !inc.ackedUntil.IsZero() && now.Before(inc.ackedUntil):
+		// Acknowledged (or snoozed and not yet expired): reminder cascade is
+		// silenced. The incident stays open so recovery still resolves it.
+		return nil
 
 	case r.RepeatEvery > 0 && now.Sub(inc.lastFired) >= r.RepeatEvery:
 		// Same severity, still open, and the repeat cadence elapsed: re-notify.
@@ -267,6 +291,85 @@ func (e *Engine) deliver(n Notification, channelIDs []string) {
 			e.log(n, id, err)
 		}
 	}
+}
+
+// Acknowledge silences the reminder cascade for an open incident on (ruleID,
+// server). With a zero until, the ack lasts for the life of the incident (it
+// clears automatically on resolve or on a severity change). With a future until,
+// it is a snooze: reminders resume after that time. It reports whether a matching
+// open incident was found. Resolve notifications are unaffected — ack stops the
+// nagging, not the all-clear.
+func (e *Engine) Acknowledge(ruleID, server string, until time.Time) bool {
+	if e == nil {
+		return false
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	inc := e.incidents[key(ruleID, server)]
+	if inc == nil {
+		return false
+	}
+	if until.IsZero() {
+		// Open-ended ack: silence until this incident resolves or worsens. Use a
+		// far-future sentinel so the "now.Before(ackedUntil)" check stays true.
+		until = inc.firstFired.AddDate(100, 0, 0)
+	}
+	inc.ackedUntil = until
+	return true
+}
+
+// OpenIncident is a snapshot of one active incident, for the dashboard's
+// acknowledge UI.
+type OpenIncident struct {
+	RuleID   string
+	RuleName string
+	Server   string
+	Severity string
+	Reason   string
+	Since    time.Time
+	Acked    bool
+}
+
+// OpenIncidents returns the currently active incidents (newest-firing last),
+// joined with their rule name for display. Used to render the acknowledge UI.
+func (e *Engine) OpenIncidents() []OpenIncident {
+	if e == nil {
+		return nil
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	names := make(map[string]string, len(e.rules))
+	for _, r := range e.rules {
+		names[r.ID] = r.Name
+	}
+	out := make([]OpenIncident, 0, len(e.incidents))
+	for k, inc := range e.incidents {
+		ruleID, server := splitKey(k)
+		out = append(out, OpenIncident{
+			RuleID: ruleID, RuleName: names[ruleID], Server: server,
+			Severity: inc.severity.String(), Reason: inc.reason,
+			Since: inc.firstFired, Acked: !inc.ackedUntil.IsZero(),
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Server != out[j].Server {
+			return out[i].Server < out[j].Server
+		}
+		return out[i].RuleName < out[j].RuleName
+	})
+	return out
+}
+
+// SetRules replaces the engine's rule set (e.g. after the operator edits rules in
+// the dashboard). Incident/flap state is preserved so an in-flight problem keeps
+// its dedupe and acknowledgement across an edit. Safe for concurrent use.
+func (e *Engine) SetRules(rules []Rule) {
+	if e == nil {
+		return
+	}
+	e.mu.Lock()
+	e.rules = rules
+	e.mu.Unlock()
 }
 
 // Rules returns a copy of the configured rules (for the UI), sorted by name.

@@ -8,6 +8,21 @@ warns you *before* something breaks. You install a small **agent** on each serve
 it reports system specs, installed packages, and running services to a central
 dashboard. Self-host it for free, or pay us to host it.
 
+## 📖 Documentation
+
+**Full, self-service user manual:
+[`docs/manual/`](docs/manual/README.md).** It covers getting started, monitoring,
+the alerting engine, users/auth/RBAC, every config/env var, security, and an
+extensive troubleshooting + FAQ + recipe index — written so you never have to ask
+for help. Jump to:
+
+- [Getting started](docs/manual/getting-started.md) — build, run the server, enroll an agent, first dashboard.
+- [Monitoring](docs/manual/monitoring.md) — what's collected and the health model.
+- [Alerting](docs/manual/alerting.md) — rules, channels, the stale-host sweeper, ack/snooze, the SSRF guard.
+- [Users, auth & RBAC](docs/manual/users-auth-rbac.md) — accounts, MFA, SSO, roles.
+- [Configuration reference](docs/manual/configuration.md) — every flag and env var.
+- [Security & privacy](docs/manual/security-privacy.md) · [Troubleshooting](docs/manual/troubleshooting.md) · [Error reference](docs/manual/error-reference.md) · [How do I…?](docs/manual/how-do-i.md) · [FAQ](docs/manual/faq.md) · [Roadmap](docs/manual/roadmap.md)
+
 See **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** for the architecture and
 roadmap, and **[CLAUDE.md](CLAUDE.md)** for engineering guidelines.
 
@@ -85,13 +100,25 @@ per-server detail page.
 
 **Alerting.** Set `LOOKOUT_ALERT_WEBHOOKS` to one or more incoming-webhook URLs
 (comma-separated — Slack, Teams, PagerDuty, or your own); each is validated by an
-SSRF guard before any request is made. A default rule fires on every server at
+SSRF guard before any request is made. A seeded rule fires on every server at
 **warning** or above, deduplicates ongoing incidents, damps flapping, and sends a
 reminder every 30 minutes until the server recovers (then a resolve notice).
-`LOOKOUT_ALERT_EMAIL` registers recipients; live SMTP delivery is not yet wired
-(the payload is built but the send is a documented TODO). Active rules and recent
-delivery activity are visible on the **Notifications** page to users who can
-manage alerts.
+Rules are **persisted and editable from the dashboard** (per-server, minimum
+severity, channels, flap window, reminder cadence) behind the *manage alerts*
+permission. A background **stale-host sweeper** re-evaluates the fleet every
+minute, so a host that goes silent fires a *stale* alert even though it has
+stopped reporting. Operators can **acknowledge** an open incident (or **snooze**
+it) to stop the reminder cascade without waiting for recovery — a worsening
+severity still re-alerts, and recovery still sends the all-clear.
+
+`LOOKOUT_ALERT_EMAIL` registers recipients. Live email is delivered through the
+shared notification service (`POST /notify/send`) when
+`LOOKOUT_NOTIFY_SERVICE_URL` and `LOOKOUT_NOTIFY_SERVICE_TOKEN` are set; the
+service URL is SSRF-checked and the payload is secret-free. When the service is
+not configured, the local email channel is the fallback and returns an explicit
+"not configured" error rather than faking a send (see `internal/alert`). Active
+rules, open incidents, and recent delivery activity are visible on the
+**Notifications** page to users who can manage alerts.
 
 > **Security note (MVP):** agent reports are authenticated with a shared bearer
 > token, checked in constant time, over plain HTTP. Production needs TLS +

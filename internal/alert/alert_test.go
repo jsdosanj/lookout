@@ -147,6 +147,60 @@ func TestServerScopedRule(t *testing.T) {
 	}
 }
 
+// Ack stops the reminder cascade: an acknowledged incident does not re-notify
+// even after RepeatEvery elapses, but a recovery still fires the resolve.
+func TestAcknowledgeStopsReminders(t *testing.T) {
+	eng, cap := newEngine(Rule{ID: "r", Name: "r", Server: "*", MinSeverity: SevWarning,
+		FlapWindow: 1, RepeatEvery: 30 * time.Minute})
+	now := time.Now()
+	eng.Observe("h1", "critical", "disk 95%", now) // fire (1)
+	if !eng.Acknowledge("r", "h1", time.Time{}) {
+		t.Fatal("acknowledge should find the open incident")
+	}
+	// Two repeat windows elapse — with the ack, neither reminds.
+	eng.Observe("h1", "critical", "disk 95%", now.Add(31*time.Minute))
+	eng.Observe("h1", "critical", "disk 95%", now.Add(62*time.Minute))
+	if len(cap.sent) != 1 {
+		t.Fatalf("ack should silence reminders, got %d notifications", len(cap.sent))
+	}
+	// Recovery still resolves (ack stops nagging, not the all-clear).
+	eng.Observe("h1", "ok", "", now.Add(70*time.Minute))
+	if len(cap.sent) != 2 || !cap.sent[1].Resolved {
+		t.Fatalf("recovery after ack should resolve, got %+v", cap.sent)
+	}
+}
+
+// Ack does not mask a worsening problem: a severity escalation clears the ack and
+// re-alerts.
+func TestAcknowledgeClearedByEscalation(t *testing.T) {
+	eng, cap := newEngine(Rule{ID: "r", Name: "r", Server: "*", MinSeverity: SevWarning,
+		FlapWindow: 1, RepeatEvery: 30 * time.Minute})
+	now := time.Now()
+	eng.Observe("h1", "warning", "disk 85%", now) // fire (1)
+	eng.Acknowledge("r", "h1", time.Time{})
+	eng.Observe("h1", "critical", "disk 95%", now.Add(time.Minute)) // escalation re-alerts (2)
+	if len(cap.sent) != 2 || cap.sent[1].Severity != "critical" {
+		t.Fatalf("escalation must clear ack and re-alert, got %+v", cap.sent)
+	}
+}
+
+// Snooze suppresses reminders until the snooze expires, then they resume.
+func TestSnoozeExpires(t *testing.T) {
+	eng, cap := newEngine(Rule{ID: "r", Name: "r", Server: "*", MinSeverity: SevWarning,
+		FlapWindow: 1, RepeatEvery: 30 * time.Minute})
+	now := time.Now()
+	eng.Observe("h1", "critical", "disk 95%", now)                     // fire (1)
+	eng.Acknowledge("r", "h1", now.Add(45*time.Minute))                // snooze 45m
+	eng.Observe("h1", "critical", "disk 95%", now.Add(31*time.Minute)) // within snooze: silent
+	if len(cap.sent) != 1 {
+		t.Fatalf("within snooze should be silent, got %d", len(cap.sent))
+	}
+	eng.Observe("h1", "critical", "disk 95%", now.Add(50*time.Minute)) // snooze expired: remind (2)
+	if len(cap.sent) != 2 || !cap.sent[1].Repeat {
+		t.Fatalf("after snooze should remind, got %+v", cap.sent)
+	}
+}
+
 func TestEnabled(t *testing.T) {
 	var nilEng *Engine
 	if nilEng.Enabled() {

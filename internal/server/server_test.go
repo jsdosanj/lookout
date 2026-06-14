@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/store"
@@ -23,7 +24,7 @@ func newTestServer(t *testing.T, token string, requireAgent bool) *Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(st, ag, token, requireAgent, nil, nil, nil)
+	return New(st, ag, token, requireAgent, nil, nil, nil, nil)
 }
 
 func reportBody(hostname string) string {
@@ -131,6 +132,32 @@ func TestReportFiresAlert(t *testing.T) {
 	}
 	if cap.sent[0].Severity != "critical" || cap.sent[0].Server != "h1" {
 		t.Errorf("unexpected alert: %+v", cap.sent[0])
+	}
+}
+
+// TestSweepFiresStaleForSilentHost is the core stale-sweeper guarantee: a host
+// that reported once and then went silent must fire a "stale" alert on a sweep,
+// even though no new report ever arrives to drive the engine.
+func TestSweepFiresStaleForSilentHost(t *testing.T) {
+	s := newTestServer(t, "shared-secret", false)
+	cap := &captureChannel{}
+	rule := alert.Rule{ID: "r", Name: "r", Server: "*", MinSeverity: alert.SevWarning,
+		FlapWindow: 1, Channels: []string{"cap"}}
+	s.alerts = alert.NewEngine([]alert.Rule{rule}, []alert.Channel{cap}, nil)
+
+	// Ingest one healthy report, then no further reports.
+	if w := postReport(s, "shared-secret", "h1"); w.Code != http.StatusNoContent {
+		t.Fatalf("seed report: want 204, got %d", w.Code)
+	}
+	// A sweep at "now" sees a recent report: nothing fires.
+	s.Sweep(time.Now().UTC())
+	if len(cap.sent) != 0 {
+		t.Fatalf("fresh host should not alert, got %d", len(cap.sent))
+	}
+	// A sweep past the stale window finds the host silent and fires stale.
+	s.Sweep(time.Now().UTC().Add(store.StaleAfter + time.Minute))
+	if len(cap.sent) != 1 || cap.sent[0].Severity != "stale" || cap.sent[0].Server != "h1" {
+		t.Fatalf("silent host should fire one stale alert, got %+v", cap.sent)
 	}
 }
 

@@ -3,6 +3,9 @@ package server
 import (
 	"html/template"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/auth"
@@ -33,7 +36,10 @@ type notifyView struct {
 	Items           []integrations.Integration
 	AlertingEnabled bool
 	CanManageAlerts bool
+	Editable        bool // rules are persisted and can be edited from the dashboard
 	Rules           []alert.Rule
+	Channels        []string
+	Incidents       []alert.OpenIncident
 	Activity        []alert.Activity
 }
 type intDetailView struct {
@@ -76,11 +82,75 @@ func (s *Server) handleNotifications(w http.ResponseWriter, r *http.Request) {
 	// Active rules and recent deliveries are only shown to users who manage alerts.
 	if v.CanManageAlerts {
 		v.Rules = s.alerts.Rules()
+		v.Channels = s.alerts.ChannelIDs()
+		v.Incidents = s.alerts.OpenIncidents()
+		v.Editable = s.rules != nil
 		if s.activity != nil {
 			v.Activity = s.activity.Recent(20)
 		}
 	}
 	render(w, notificationsTmpl, v)
+}
+
+// handleRuleSave creates or updates a persisted alert rule from the dashboard
+// form, then pushes the new rule set into the live engine. Behind PermManageAlerts.
+func (s *Server) handleRuleSave(w http.ResponseWriter, r *http.Request) {
+	if s.rules == nil {
+		http.Error(w, "rule editing not available", http.StatusServiceUnavailable)
+		return
+	}
+	rule := alert.Rule{
+		ID:          r.FormValue("id"),
+		Name:        strings.TrimSpace(r.FormValue("name")),
+		Server:      strings.TrimSpace(r.FormValue("server")),
+		MinSeverity: alert.SeverityOf(r.FormValue("min_severity")),
+		Channels:    r.Form["channels"],
+		FlapWindow:  atoiDefault(r.FormValue("flap_window"), 1),
+		RepeatEvery: time.Duration(atoiDefault(r.FormValue("repeat_min"), 0)) * time.Minute,
+	}
+	if rule.Name == "" || len(rule.Channels) == 0 {
+		http.Error(w, "rule needs a name and at least one channel", http.StatusBadRequest)
+		return
+	}
+	if _, err := s.rules.Upsert(rule); err != nil {
+		http.Error(w, "save failed", http.StatusInternalServerError)
+		return
+	}
+	s.alerts.SetRules(s.rules.Rules())
+	http.Redirect(w, r, "/notifications", http.StatusSeeOther)
+}
+
+// handleRuleDelete removes a persisted rule and refreshes the live engine.
+func (s *Server) handleRuleDelete(w http.ResponseWriter, r *http.Request) {
+	if s.rules == nil {
+		http.Error(w, "rule editing not available", http.StatusServiceUnavailable)
+		return
+	}
+	if err := s.rules.Delete(r.FormValue("id")); err != nil {
+		http.Error(w, "delete failed", http.StatusInternalServerError)
+		return
+	}
+	s.alerts.SetRules(s.rules.Rules())
+	http.Redirect(w, r, "/notifications", http.StatusSeeOther)
+}
+
+// handleAck acknowledges (or snoozes) an open incident so its reminder cascade
+// stops. snooze_min > 0 snoozes for that many minutes; 0 acks until the incident
+// resolves or worsens. Behind PermManageAlerts.
+func (s *Server) handleAck(w http.ResponseWriter, r *http.Request) {
+	var until time.Time
+	if m := atoiDefault(r.FormValue("snooze_min"), 0); m > 0 {
+		until = time.Now().UTC().Add(time.Duration(m) * time.Minute)
+	}
+	s.alerts.Acknowledge(r.FormValue("rule_id"), r.FormValue("server"), until)
+	http.Redirect(w, r, "/notifications", http.StatusSeeOther)
+}
+
+func atoiDefault(s string, def int) int {
+	if n, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
+		return n
+	}
+	return def
 }
 func (s *Server) handleIntegrationDetail(w http.ResponseWriter, r *http.Request) {
 	in, ok := integrations.ByID(r.PathValue("id"))
@@ -133,19 +203,65 @@ var notificationsTmpl = mustPage("notifications", "Notifications", `
     {{if .AlertingEnabled}}<p><span class="tag live">Active</span> Rules below are live and delivering.</p>
     {{else}}<p><span class="tag soon">Off</span> No alert channels configured. Set <code>LOOKOUT_ALERT_WEBHOOKS</code> to turn alerting on.</p>{{end}}
   </div>
+  {{if .Incidents}}
+  <h2>Open incidents</h2>
+  <p class="intro">Acknowledge to stop the reminder cascade without waiting for recovery. A worsening severity re-alerts; recovery still sends the all-clear.</p>
+  <table class="alert-table">
+    <thead><tr><th>Server</th><th>Rule</th><th>Severity</th><th>Cause</th><th>State</th><th>Actions</th></tr></thead>
+    <tbody>
+      {{range .Incidents}}
+      <tr><td>{{.Server}}</td><td>{{.RuleName}}</td><td>{{.Severity}}</td><td>{{.Reason}}</td>
+        <td>{{if .Acked}}<span class="tag soon">acknowledged</span>{{else}}<span class="tag live">active</span>{{end}}</td>
+        <td>
+          <form method="post" action="/notifications/ack" style="display:inline">{{$.CSRF}}
+            <input type="hidden" name="rule_id" value="{{.RuleID}}"><input type="hidden" name="server" value="{{.Server}}">
+            <button class="linkbtn" type="submit" style="color:var(--brand);font-weight:700">Acknowledge</button></form>
+          <form method="post" action="/notifications/ack" style="display:inline;margin-left:.6rem">{{$.CSRF}}
+            <input type="hidden" name="rule_id" value="{{.RuleID}}"><input type="hidden" name="server" value="{{.Server}}">
+            <input type="hidden" name="snooze_min" value="60">
+            <button class="linkbtn" type="submit" style="color:var(--muted);font-weight:700">Snooze 1h</button></form>
+        </td></tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{end}}
   {{if .Rules}}
   <h2>Active rules</h2>
   <table class="alert-table">
-    <thead><tr><th>Rule</th><th>Server</th><th>Fires at</th><th>Flap window</th><th>Repeat</th><th>Channels</th></tr></thead>
+    <thead><tr><th>Rule</th><th>Server</th><th>Fires at</th><th>Flap window</th><th>Repeat</th><th>Channels</th>{{if .Editable}}<th></th>{{end}}</tr></thead>
     <tbody>
       {{range .Rules}}
       <tr><td>{{.Name}}</td><td>{{if or (eq .Server "") (eq .Server "*")}}all{{else}}{{.Server}}{{end}}</td>
         <td>{{.MinSeverity.String}}+</td><td>{{.FlapWindow}} obs</td>
         <td>{{if .RepeatEvery}}{{.RepeatEvery}}{{else}}—{{end}}</td>
-        <td>{{range $i, $c := .Channels}}{{if $i}}, {{end}}{{$c}}{{end}}</td></tr>
+        <td>{{range $i, $c := .Channels}}{{if $i}}, {{end}}{{$c}}{{end}}</td>
+        {{if $.Editable}}<td><form method="post" action="/notifications/rules/delete" style="display:inline">{{$.CSRF}}
+          <input type="hidden" name="id" value="{{.ID}}">
+          <button class="linkbtn" type="submit" style="color:#c0392b;font-weight:700">Delete</button></form></td>{{end}}</tr>
       {{end}}
     </tbody>
   </table>
+  {{end}}
+  {{if .Editable}}
+  <div class="guide" style="margin-bottom:1.2rem">
+    <h4>Add or update a rule</h4>
+    <form method="post" action="/notifications/rules/save" style="display:grid;gap:.6rem;max-width:32rem">{{.CSRF}}
+      <label>Name <input name="name" required style="width:100%"></label>
+      <label>Server (blank or <code>*</code> = all, else exact server id) <input name="server" placeholder="*" style="width:100%"></label>
+      <label>Fire at
+        <select name="min_severity">
+          <option value="warning">warning and above</option>
+          <option value="critical">critical and above</option>
+          <option value="stale">stale only</option>
+        </select></label>
+      <label>Flap window (observations before acting) <input name="flap_window" type="number" min="1" value="2" style="width:6rem"></label>
+      <label>Reminder cadence in minutes (0 = never) <input name="repeat_min" type="number" min="0" value="30" style="width:6rem"></label>
+      <fieldset style="border:1px solid var(--line);border-radius:8px;padding:.6rem"><legend>Channels</legend>
+        {{range .Channels}}<label style="display:block"><input type="checkbox" name="channels" value="{{.}}" style="width:auto"> {{.}}</label>{{end}}
+      </fieldset>
+      <button type="submit" class="linkbtn" style="color:var(--brand);font-weight:700;justify-self:start">Save rule</button>
+    </form>
+  </div>
   {{end}}
   <h2 style="margin-top:1.2rem">Recent alert activity</h2>
   {{if .Activity}}
