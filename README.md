@@ -16,7 +16,10 @@ roadmap, and **[CLAUDE.md](CLAUDE.md)** for engineering guidelines.
 **Phase 1–2 — agent + control plane + dashboard (working MVP).** The agent
 collects a host report and reports it to the control plane, which computes
 plain-English health and serves a dashboard (overview + per-server detail).
-Alerting, RBAC/MFA, plugins, and a SQLite store are the next phases.
+**Built-in alerting** now ships: a rule engine evaluates each report and delivers
+Slack/Teams/webhook notifications with dedupe, flap-damping, and escalation
+reminders (email is scaffolded; live SMTP send is the next step). Plugins and a
+SQLite store are the remaining phases.
 
 A **static live demo** of the dashboard is generated into [`docs/`](docs) and
 can be hosted on GitHub Pages.
@@ -79,6 +82,16 @@ per-server detail page.
 - **TOTP MFA** (authenticator apps) — users enable it at `/account`.
 - **RBAC** — roles (owner / admin / operator / viewer); admins manage users at
   `/admin/users`. Set `LOOKOUT_SECURE_COOKIES=true` behind TLS.
+
+**Alerting.** Set `LOOKOUT_ALERT_WEBHOOKS` to one or more incoming-webhook URLs
+(comma-separated — Slack, Teams, PagerDuty, or your own); each is validated by an
+SSRF guard before any request is made. A default rule fires on every server at
+**warning** or above, deduplicates ongoing incidents, damps flapping, and sends a
+reminder every 30 minutes until the server recovers (then a resolve notice).
+`LOOKOUT_ALERT_EMAIL` registers recipients; live SMTP delivery is not yet wired
+(the payload is built but the send is a documented TODO). Active rules and recent
+delivery activity are visible on the **Notifications** page to users who can
+manage alerts.
 
 > **Security note (MVP):** agent reports are authenticated with a shared bearer
 > token, checked in constant time, over plain HTTP. Production needs TLS +

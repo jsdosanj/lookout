@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/auth"
 	"github.com/jsdosanj/lookout/internal/collect"
-	"github.com/jsdosanj/lookout/internal/notify"
 	"github.com/jsdosanj/lookout/internal/store"
 )
 
@@ -23,14 +23,17 @@ type Server struct {
 	token        string            // shared agent enrollment token
 	requireAgent bool              // when true, the legacy shared token is rejected on /report
 	auth         *auth.Auth        // user auth; nil disables login (dev only)
-	notifier     *notify.Notifier  // alert delivery (webhook/Slack/Teams); may be nil
+	alerts       *alert.Engine     // alert rule engine + delivery; may be nil
+	activity     *alert.Recorder   // recent alert deliveries for the UI; may be nil
 }
 
 // New creates a control-plane server. token authenticates agents; a authenticates
-// dashboard users (pass nil for no-login dev mode); n delivers alerts (may be nil).
-// ag holds per-agent credentials; requireAgent locks down the legacy shared token.
-func New(st *store.Store, ag *store.AgentStore, token string, requireAgent bool, a *auth.Auth, n *notify.Notifier) *Server {
-	return &Server{store: st, agents: ag, token: token, requireAgent: requireAgent, auth: a, notifier: n}
+// dashboard users (pass nil for no-login dev mode); eng evaluates alert rules and
+// delivers notifications (may be nil); rec exposes recent deliveries to the UI
+// (may be nil). ag holds per-agent credentials; requireAgent locks down the
+// legacy shared token.
+func New(st *store.Store, ag *store.AgentStore, token string, requireAgent bool, a *auth.Auth, eng *alert.Engine, rec *alert.Recorder) *Server {
+	return &Server{store: st, agents: ag, token: token, requireAgent: requireAgent, auth: a, alerts: eng, activity: rec}
 }
 
 // Routes returns the HTTP handler for the control plane.
@@ -139,24 +142,20 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "hostname is claimed by another agent", http.StatusConflict)
 		return
 	}
-	// Capture the previous health so we can alert if this report makes it worse.
 	now := time.Now().UTC()
-	var prev string
-	if old, ok := s.store.Get(rep.Host.Hostname); ok {
-		prev = store.Evaluate(old, now).Status
-	}
 	if err := s.store.Save(&rep); err != nil {
 		http.Error(w, "store error", http.StatusInternalServerError)
 		return
 	}
-	s.maybeAlert(rep.Host.Hostname, prev, now)
+	s.maybeAlert(rep.Host.Hostname, now)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// maybeAlert fires a notification when a server's health worsens into a
-// warning/critical state on this report.
-func (s *Server) maybeAlert(id, prev string, now time.Time) {
-	if !s.notifier.Enabled() {
+// maybeAlert feeds this report's health into the alert engine, which owns the
+// rule evaluation, dedupe, flap-damping, and escalation decisions (it fires only
+// when a rule says to). prev is unused now that the engine tracks incident state.
+func (s *Server) maybeAlert(id string, now time.Time) {
+	if !s.alerts.Enabled() {
 		return
 	}
 	srv, ok := s.store.Get(id)
@@ -164,13 +163,11 @@ func (s *Server) maybeAlert(id, prev string, now time.Time) {
 		return
 	}
 	h := store.Evaluate(srv, now)
-	if store.WorseThan(h.Status, prev) && (h.Status == "warning" || h.Status == "critical") {
-		reason := ""
-		if len(h.Reasons) > 0 {
-			reason = h.Reasons[0]
-		}
-		s.notifier.Notify(notify.Event{Server: id, OldStatus: prev, NewStatus: h.Status, Reason: reason})
+	reason := ""
+	if len(h.Reasons) > 0 {
+		reason = h.Reasons[0]
 	}
+	s.alerts.Observe(id, h.Status, reason, now)
 }
 
 // bearer extracts the token from an "Authorization: Bearer <token>" header.

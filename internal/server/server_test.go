@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/store"
 )
 
@@ -22,7 +23,7 @@ func newTestServer(t *testing.T, token string, requireAgent bool) *Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return New(st, ag, token, requireAgent, nil, nil)
+	return New(st, ag, token, requireAgent, nil, nil, nil)
 }
 
 func reportBody(hostname string) string {
@@ -88,6 +89,48 @@ func TestReportCrossHostOverwriteRejected(t *testing.T) {
 	_, tokB, _ := s.agents.Enroll("other")
 	if w := postReport(s, tokB, "victim"); w.Code != http.StatusConflict {
 		t.Errorf("cross-host overwrite: want 409, got %d", w.Code)
+	}
+}
+
+// captureChannel records notifications for the wiring test.
+type captureChannel struct{ sent []alert.Notification }
+
+func (c *captureChannel) ID() string { return "cap" }
+func (c *captureChannel) Send(n alert.Notification) error {
+	c.sent = append(c.sent, n)
+	return nil
+}
+
+// criticalReport is a report whose disk usage (95%) evaluates to "critical".
+func criticalReport(hostname string) string {
+	return `{"schema_version":"1","host":{"hostname":"` + hostname + `","os":"linux"},` +
+		`"specs":{"disks":[{"mount":"/","total_mb":1000,"used_mb":950}]}}`
+}
+
+// TestReportFiresAlert verifies the full wiring: ingesting a threshold-crossing
+// report drives the alert engine and delivers exactly one notification (dedupe
+// holds on a repeat of the same state).
+func TestReportFiresAlert(t *testing.T) {
+	s := newTestServer(t, "shared-secret", false)
+	cap := &captureChannel{}
+	rule := alert.Rule{ID: "r", Name: "r", Server: "*", MinSeverity: alert.SevWarning,
+		FlapWindow: 1, Channels: []string{"cap"}}
+	s.alerts = alert.NewEngine([]alert.Rule{rule}, []alert.Channel{cap}, nil)
+
+	post := func() {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/agents/report",
+			strings.NewReader(criticalReport("h1")))
+		req.Header.Set("Authorization", "Bearer shared-secret")
+		req.Header.Set("Content-Type", "application/json")
+		s.handleReport(httptest.NewRecorder(), req)
+	}
+	post()
+	post() // same state again: must dedupe
+	if len(cap.sent) != 1 {
+		t.Fatalf("want 1 delivered alert (deduped), got %d", len(cap.sent))
+	}
+	if cap.sent[0].Severity != "critical" || cap.sent[0].Server != "h1" {
+		t.Errorf("unexpected alert: %+v", cap.sent[0])
 	}
 }
 

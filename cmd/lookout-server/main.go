@@ -9,12 +9,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/auth"
-	"github.com/jsdosanj/lookout/internal/notify"
 	"github.com/jsdosanj/lookout/internal/server"
 	"github.com/jsdosanj/lookout/internal/store"
 )
@@ -45,14 +46,11 @@ func main() {
 	bootstrapOwner(users)
 
 	a := auth.New(users, secureCookies, "Lookout")
-	// Alert webhooks (Slack/Teams/generic) from LOOKOUT_ALERT_WEBHOOKS (comma-separated).
-	var webhooks []string
-	for _, u := range strings.Split(os.Getenv("LOOKOUT_ALERT_WEBHOOKS"), ",") {
-		if u = strings.TrimSpace(u); u != "" {
-			webhooks = append(webhooks, u)
-		}
-	}
-	n := notify.New(webhooks)
+	// Build the alert engine: webhook channels from LOOKOUT_ALERT_WEBHOOKS
+	// (comma-separated, each SSRF-validated) plus a default fleet rule that fires
+	// at warning+ with flap-damping and a 30-minute escalation reminder.
+	recorder := alert.NewRecorder(50)
+	eng := buildAlertEngine(recorder)
 
 	// Background session GC: sweep expired sessions until shutdown (clean exit).
 	stopGC := make(chan struct{})
@@ -61,7 +59,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           server.New(st, agents, token, requireAgent, a, n).Routes(),
+		Handler:           server.New(st, agents, token, requireAgent, a, eng, recorder).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -89,6 +87,69 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// buildAlertEngine wires the alert engine from environment configuration:
+//   - LOOKOUT_ALERT_WEBHOOKS: comma-separated Slack/Teams/generic webhook URLs.
+//     Each is SSRF-validated; an unsafe or unreachable URL is logged and skipped.
+//   - LOOKOUT_ALERT_EMAIL: comma-separated recipient addresses (channel is
+//     configured but SMTP delivery is not yet wired — see internal/alert).
+//
+// When any channel is configured, a default "fleet" rule fires on every server
+// at warning severity or above, with 2-observation flap-damping and a 30-minute
+// escalation reminder for unresolved incidents.
+func buildAlertEngine(rec *alert.Recorder) *alert.Engine {
+	var channels []alert.Channel
+	var channelIDs []string
+
+	i := 0
+	for _, u := range strings.Split(os.Getenv("LOOKOUT_ALERT_WEBHOOKS"), ",") {
+		if u = strings.TrimSpace(u); u == "" {
+			continue
+		}
+		id := "webhook"
+		if i > 0 {
+			id = "webhook-" + strconv.Itoa(i+1)
+		}
+		ch, err := alert.NewWebhookChannel(id, u)
+		if err != nil {
+			log.Printf("alert webhook rejected (%s): %v", id, err)
+			continue
+		}
+		channels = append(channels, ch)
+		channelIDs = append(channelIDs, id)
+		i++
+	}
+
+	var emailTo []string
+	for _, e := range strings.Split(os.Getenv("LOOKOUT_ALERT_EMAIL"), ",") {
+		if e = strings.TrimSpace(e); e != "" {
+			emailTo = append(emailTo, e)
+		}
+	}
+	if len(emailTo) > 0 {
+		// SMTP creds not yet wired: channel is registered so rules/UI reference it,
+		// but Send returns an explicit not-configured error (no fake success).
+		channels = append(channels, alert.NewEmailChannel("email", emailTo, nil))
+		channelIDs = append(channelIDs, "email")
+	}
+
+	if len(channels) == 0 {
+		log.Print("NOTE: no alert channels configured — set LOOKOUT_ALERT_WEBHOOKS to enable alerting")
+		return nil
+	}
+
+	rules := []alert.Rule{{
+		ID:          "fleet-default",
+		Name:        "Fleet: warning and above",
+		Server:      "*",
+		MinSeverity: alert.SevWarning,
+		Channels:    channelIDs,
+		FlapWindow:  2,
+		RepeatEvery: 30 * time.Minute,
+	}}
+	log.Printf("alerting enabled: %d channel(s), %d rule(s)", len(channels), len(rules))
+	return alert.NewEngine(rules, channels, rec.Log)
 }
 
 // bootstrapOwner creates the first owner account on a fresh install from

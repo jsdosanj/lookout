@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/auth"
 	"github.com/jsdosanj/lookout/internal/integrations"
 )
@@ -29,7 +30,11 @@ type intView struct {
 }
 type notifyView struct {
 	pageView
-	Items []integrations.Integration
+	Items           []integrations.Integration
+	AlertingEnabled bool
+	CanManageAlerts bool
+	Rules           []alert.Rule
+	Activity        []alert.Activity
 }
 type intDetailView struct {
 	pageView
@@ -60,7 +65,22 @@ func (s *Server) handleIntegrations(w http.ResponseWriter, r *http.Request) {
 	render(w, integrationsTmpl, intView{pageView: s.page("integrations", r), Groups: groups})
 }
 func (s *Server) handleNotifications(w http.ResponseWriter, r *http.Request) {
-	render(w, notificationsTmpl, notifyView{pageView: s.page("notifications", r), Items: integrations.ByCategory(integrations.NotificationCategory)})
+	v := notifyView{
+		pageView:        s.page("notifications", r),
+		Items:           integrations.ByCategory(integrations.NotificationCategory),
+		AlertingEnabled: s.alerts.Enabled(),
+	}
+	if u := auth.CurrentUser(r); u != nil {
+		v.CanManageAlerts = u.Role.Can(auth.PermManageAlerts)
+	}
+	// Active rules and recent deliveries are only shown to users who manage alerts.
+	if v.CanManageAlerts {
+		v.Rules = s.alerts.Rules()
+		if s.activity != nil {
+			v.Activity = s.activity.Recent(20)
+		}
+	}
+	render(w, notificationsTmpl, v)
 }
 func (s *Server) handleIntegrationDetail(w http.ResponseWriter, r *http.Request) {
 	in, ok := integrations.ByID(r.PathValue("id"))
@@ -106,13 +126,49 @@ var integrationsTmpl = mustPage("integrations", "Integrations", `
 
 var notificationsTmpl = mustPage("notifications", "Notifications", `
   <h1>Notifications</h1>
-  <p class="intro">Lookout alerts you the moment a server worsens into <b>warning</b> or <b>critical</b>. Slack, Teams, and generic webhooks are live today; email and SMS are in development.</p>
+  <p class="intro">Lookout alerts you the moment a server worsens into <b>warning</b> or <b>critical</b>, deduplicates ongoing problems, damps flapping, and re-notifies until the incident clears. Slack, Teams, and generic webhooks are live today; email and SMS are in development.</p>
+  {{if .CanManageAlerts}}
+  <div class="guide" style="margin-bottom:1.2rem">
+    <h4>Alerting status</h4>
+    {{if .AlertingEnabled}}<p><span class="tag live">Active</span> Rules below are live and delivering.</p>
+    {{else}}<p><span class="tag soon">Off</span> No alert channels configured. Set <code>LOOKOUT_ALERT_WEBHOOKS</code> to turn alerting on.</p>{{end}}
+  </div>
+  {{if .Rules}}
+  <h2>Active rules</h2>
+  <table class="alert-table">
+    <thead><tr><th>Rule</th><th>Server</th><th>Fires at</th><th>Flap window</th><th>Repeat</th><th>Channels</th></tr></thead>
+    <tbody>
+      {{range .Rules}}
+      <tr><td>{{.Name}}</td><td>{{if or (eq .Server "") (eq .Server "*")}}all{{else}}{{.Server}}{{end}}</td>
+        <td>{{.MinSeverity.String}}+</td><td>{{.FlapWindow}} obs</td>
+        <td>{{if .RepeatEvery}}{{.RepeatEvery}}{{else}}—{{end}}</td>
+        <td>{{range $i, $c := .Channels}}{{if $i}}, {{end}}{{$c}}{{end}}</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{end}}
+  <h2 style="margin-top:1.2rem">Recent alert activity</h2>
+  {{if .Activity}}
+  <table class="alert-table">
+    <thead><tr><th>Time</th><th>Server</th><th>State</th><th>Channel</th><th>Result</th></tr></thead>
+    <tbody>
+      {{range .Activity}}
+      <tr><td>{{.At.Format "Jan 2 15:04"}}</td><td>{{.Server}}</td>
+        <td>{{if .Resolved}}resolved{{else}}{{.Severity}}{{if .Repeat}} (reminder){{end}}{{end}}</td>
+        <td>{{.Channel}}</td>
+        <td>{{if .Err}}<span class="tag soon">failed</span>{{else}}<span class="tag live">sent</span>{{end}}</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="intro">No alerts delivered yet. When a server crosses a threshold, the delivery shows here.</p>{{end}}
+  {{end}}
+  <h2 style="margin-top:1.2rem">Channels</h2>
   <div class="cards">
     {{range .Items}}
     <a class="icard" href="{{if $.Static}}integration-{{.ID}}.html{{else}}/integrations/{{.ID}}{{end}}"><span class="tag {{.Status.Tag}}">{{.Status.Label}}</span><h4>{{.Name}}</h4><p>{{.Description}}</p></a>
     {{end}}
   </div>
-  <div class="guide" style="margin-top:1.2rem"><h4>Enable webhook alerts (today)</h4><p>Set <code>LOOKOUT_ALERT_WEBHOOKS</code> on the control plane to one or more incoming-webhook URLs (comma-separated). Slack and Teams both accept the format Lookout sends.</p></div>`)
+  <div class="guide" style="margin-top:1.2rem"><h4>Enable webhook alerts (today)</h4><p>Set <code>LOOKOUT_ALERT_WEBHOOKS</code> on the control plane to one or more incoming-webhook URLs (comma-separated). Every URL is validated against an SSRF guard before any request is made. Slack and Teams both accept the format Lookout sends.</p></div>`)
 
 var integrationDetailTmpl = mustPage("integration", "Integration", `
   <a class="back" href="{{if .Static}}{{if eq .I.Category "notifications"}}notifications.html{{else}}integrations.html{{end}}{{else}}/{{if eq .I.Category "notifications"}}notifications{{else}}integrations{{end}}{{end}}">&larr; Back</a>
