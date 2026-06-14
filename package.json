@@ -14,5 +14,8 @@
     "@tailwindcss/vite": "^4.0.0",
     "@tailwindcss/typography": "^0.5.15",
     "@astrojs/sitemap": "^3.2.0"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
