@@ -40,7 +40,7 @@ func (s *Server) Routes() http.Handler {
 		mux.HandleFunc("GET /api/v1/servers", s.handleListJSON)
 		mux.HandleFunc("GET /server/{id}", s.handleDetail)
 		mux.HandleFunc("GET /", s.handleDashboard)
-		return mux
+		return securityHeaders(mux)
 	}
 
 	// Login/account/admin/OAuth routes.
@@ -55,7 +55,28 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("GET /notifications", view(s.handleNotifications))
 	mux.Handle("GET /settings", view(s.handleSettings))
 	mux.Handle("GET /{$}", view(s.handleDashboard))
-	return mux
+	return securityHeaders(mux)
+}
+
+// securityHeaders wraps h with baseline browser hardening headers. The CSP pins
+// script sources to ourselves plus the Chart.js CDN host and forbids framing.
+func securityHeaders(h http.Handler) http.Handler {
+	const csp = "default-src 'self'; " +
+		"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+		"style-src 'self' 'unsafe-inline'; " +
+		"img-src 'self' data:; " +
+		"frame-ancestors 'none'; base-uri 'self'"
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hd := w.Header()
+		hd.Set("X-Frame-Options", "DENY")
+		hd.Set("X-Content-Type-Options", "nosniff")
+		hd.Set("Referrer-Policy", "no-referrer")
+		hd.Set("Content-Security-Policy", csp)
+		if r.TLS != nil {
+			hd.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 // handleReport ingests one agent report.

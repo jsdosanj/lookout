@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 )
 
 // Mount registers all auth routes (login, MFA, account, admin users, OAuth) on mux.
@@ -48,10 +49,23 @@ func (a *Auth) loginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Auth) loginPost(w http.ResponseWriter, r *http.Request) {
-	u, err := a.store.Authenticate(r.FormValue("email"), r.FormValue("password"))
+	email := r.FormValue("email")
+	key := strings.ToLower(strings.TrimSpace(email)) + "|" + clientIP(r)
+	if a.loginLimiter.locked(key) {
+		http.Redirect(w, r, "/login?err=locked", http.StatusSeeOther)
+		return
+	}
+	u, err := a.store.Authenticate(email, r.FormValue("password"))
 	if err != nil {
+		a.loginLimiter.fail(key)
 		http.Redirect(w, r, "/login?err=bad", http.StatusSeeOther)
 		return
+	}
+	a.loginLimiter.reset(key)
+	// Session fixation: discard any session the visitor already presented before
+	// establishing the post-authentication one.
+	if c, err := r.Cookie(CookieName); err == nil && c.Value != "" {
+		_ = a.store.DeleteSession(c.Value)
 	}
 	mfaDone := !u.MFAEnabled
 	sess, err := a.store.CreateSession(u.ID, mfaDone)
@@ -82,11 +96,33 @@ func (a *Auth) mfaPost(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+	key := u.ID + "|" + clientIP(r)
+	if a.mfaLimiter.locked(key) {
+		// Too many bad codes: drop the pre-MFA session and force a fresh login.
+		_ = a.store.DeleteSession(sess.Token)
+		clearSessionCookie(w, a.secure)
+		http.Redirect(w, r, "/login?err=locked", http.StatusSeeOther)
+		return
+	}
 	if !ValidateTOTP(u.TOTPSecret, r.FormValue("code")) {
+		if a.mfaLimiter.fail(key) {
+			// Lockout reached on this attempt: invalidate the pre-MFA session.
+			_ = a.store.DeleteSession(sess.Token)
+			clearSessionCookie(w, a.secure)
+			http.Redirect(w, r, "/login?err=locked", http.StatusSeeOther)
+			return
+		}
 		http.Redirect(w, r, "/login/mfa?err=bad", http.StatusSeeOther)
 		return
 	}
-	_ = a.store.MarkSessionMFADone(sess.Token)
+	a.mfaLimiter.reset(key)
+	// Rotate the session token on the password→MFA privilege transition.
+	newSess, err := a.store.MarkSessionMFADone(sess.Token)
+	if err != nil {
+		http.Error(w, "session error", http.StatusInternalServerError)
+		return
+	}
+	setSessionCookie(w, newSess.Token, a.secure)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

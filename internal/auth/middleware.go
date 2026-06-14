@@ -7,15 +7,20 @@ import (
 
 // Auth wires the user store and config into HTTP middleware + handlers.
 type Auth struct {
-	store  *Store
-	secure bool // emit Secure cookies (set true behind TLS)
-	issuer string
-	oauth  map[string]*oauthProvider
+	store        *Store
+	secure       bool // emit Secure cookies (set true behind TLS)
+	issuer       string
+	oauth        map[string]*oauthProvider
+	loginLimiter *throttle // password-login brute-force guard
+	mfaLimiter   *throttle // TOTP-verify brute-force guard
 }
 
 // New creates the auth layer. issuer labels TOTP entries in authenticator apps.
 func New(store *Store, secure bool, issuer string) *Auth {
-	return &Auth{store: store, secure: secure, issuer: issuer, oauth: loadOAuthProviders()}
+	return &Auth{
+		store: store, secure: secure, issuer: issuer, oauth: loadOAuthProviders(),
+		loginLimiter: newThrottle(), mfaLimiter: newThrottle(),
+	}
 }
 
 // Store exposes the user store (for first-run bootstrap, etc.).

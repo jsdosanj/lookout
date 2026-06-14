@@ -109,16 +109,24 @@ func (p *oauthProvider) email(token string) (string, string, error) {
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	var u struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
-		Login string `json:"login"`
+		Email         string `json:"email"`
+		EmailVerified bool   `json:"email_verified"`
+		Name          string `json:"name"`
+		Login         string `json:"login"`
 	}
 	_ = json.Unmarshal(body, &u)
 	name := u.Name
 	if name == "" {
 		name = u.Login
 	}
-	if u.Email != "" {
+	// OIDC providers (e.g. Google) carry an email_verified claim — never trust an
+	// unverified address, since it lets an attacker bind to someone else's email.
+	// GitHub's /user response has no such field; its verified address is fetched
+	// separately below via githubPrimaryEmail.
+	if u.Email != "" && p.name != "github" {
+		if !u.EmailVerified {
+			return "", "", fmt.Errorf("provider returned an unverified email")
+		}
 		return strings.ToLower(u.Email), name, nil
 	}
 	// GitHub may not return a public email; fetch the primary verified one.
@@ -127,7 +135,7 @@ func (p *oauthProvider) email(token string) (string, string, error) {
 			return e, name, nil
 		}
 	}
-	return "", "", fmt.Errorf("provider did not return an email")
+	return "", "", fmt.Errorf("provider did not return a verified email")
 }
 
 func githubPrimaryEmail(token string) string {

@@ -161,7 +161,8 @@ const dashBody = `
     <code>lookout-agent run --server http://THIS_HOST:8080 --token YOUR_TOKEN</code></div>
   {{end}}
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<!-- TODO(security): pin an exact chart.js version and add an integrity="sha384-..." SRI hash. The "@4" tag floats across patch releases, so no fixed hash is correct; the CSP host allowlist is the current safeguard. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" crossorigin="anonymous"></script>
 <script>
   const OS = {{.OSDistJSON}};
   if (window.Chart && document.getElementById('osChart') && OS.labels && OS.labels.length) {
@@ -242,7 +243,8 @@ const detailBody = `
     s.addEventListener('input',function(){var q=s.value.toLowerCase();Array.prototype.slice.call(t.rows,1).forEach(function(r){
       r.style.display=r.cells[0].textContent.toLowerCase().indexOf(q)>=0?'':'none';});});})();</script>{{end}}
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<!-- TODO(security): pin an exact chart.js version and add an integrity="sha384-..." SRI hash. The "@4" tag floats across patch releases, so no fixed hash is correct; the CSP host allowlist is the current safeguard. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" crossorigin="anonymous"></script>
 <script>
   const D = {{.ChartData}};
   if (window.Chart && document.getElementById('perf') && D.labels.length) {

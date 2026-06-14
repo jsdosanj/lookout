@@ -50,7 +50,7 @@ const adminNav = `<div class="bar"><div class="logo" style="margin:0">Look<b>out
 var loginTmpl = authTmpl(`
 <div class="wrap"><div class="card">
   <div class="logo">Look<b>out</b></div>
-  {{if .Err}}<div class="err">{{if eq .Err "noaccount"}}No Lookout account for that identity — ask an admin to add you.{{else if eq .Err "state"}}Login session expired, please try again.{{else if eq .Err "sso"}}SSO sign-in failed. Try again.{{else}}Sign-in failed. Check your email and password.{{end}}</div>{{end}}
+  {{if .Err}}<div class="err">{{if eq .Err "noaccount"}}No Lookout account for that identity — ask an admin to add you.{{else if eq .Err "state"}}Login session expired, please try again.{{else if eq .Err "sso"}}SSO sign-in failed. Try again.{{else if eq .Err "locked"}}Too many attempts. Please wait a few minutes and try again.{{else}}Sign-in failed. Check your email and password.{{end}}</div>{{end}}
   <form method="post" action="/login">
     <label>Email</label><input name="email" type="email" autocomplete="email" required>
     <label>Password</label><input name="password" type="password" autocomplete="current-password" required>
