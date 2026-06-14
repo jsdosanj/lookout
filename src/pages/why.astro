@@ -14,9 +14,11 @@ const problems = [
 ];
 const solutions = [
   { t: 'Early warning, not autopsy', b: 'Lookout watches continuously and flags trouble — “disk /data is 94% full” — while you can still fix it on your schedule, not at 2am.' },
+  { t: 'Alerts that reach you', b: 'Built-in rules send one clear message to Slack, Teams, or any webhook — with dedupe, escalation, and recovery notices. A host that goes silent alerts too.' },
   { t: 'Set up in minutes', b: 'One small agent per server. It only makes outbound connections, so there are no inbound ports to open and no firewall holes to punch.' },
   { t: 'Plain-English verdicts', b: 'Every server reads ok / warning / critical with the reason in one line. Executives get the meaning; engineers get the detail underneath.' },
-  { t: 'Built for people without an ops team', b: 'If you can paste a command into a terminal, you can run Lookout. Managed plans mean there’s nothing for you to host or maintain.' },
+  { t: 'Built for people without an ops team', b: 'If you can paste a command into a terminal, you can run Lookout. It’s open source, so it costs nothing to start — or pick a managed plan and there’s nothing for you to host or maintain.' },
+  { t: 'No noise, no nagging', b: 'Flap-damping kills threshold-bouncing spam, and acknowledge / snooze stops reminders once you’re on it — without hiding a problem that gets worse.' },
 ];
 ---
 
@@ -78,9 +80,10 @@ const solutions = [
       <div class="rounded-2xl border border-indigo-400/30 bg-indigo-500/[0.06] p-6">
         <h3 class="font-bold text-emerald-400">With Lookout</h3>
         <ul class="mt-3 space-y-2 text-sm text-slate-200">
-          <li><span class="text-emerald-400" aria-hidden="true">◆</span> Get warned at 80% disk, fix it calmly</li>
-          <li><span class="text-emerald-400" aria-hidden="true">◆</span> Inventory + posture ready on demand</li>
-          <li><span class="text-emerald-400" aria-hidden="true">◆</span> Every host’s specs, packages & services in one place</li>
+          <li><span class="text-emerald-400" aria-hidden="true">◆</span> Get a Slack message at 80% disk, fix it calmly</li>
+          <li><span class="text-emerald-400" aria-hidden="true">◆</span> A host that goes silent still pages you</li>
+          <li><span class="text-emerald-400" aria-hidden="true">◆</span> One alert per problem — acknowledge or snooze it</li>
+          <li><span class="text-emerald-400" aria-hidden="true">◆</span> Inventory + posture ready on demand: every host’s specs, packages &amp; services</li>
           <li><span class="text-emerald-400" aria-hidden="true">◆</span> One plain-English dashboard for the whole fleet</li>
         </ul>
       </div>
