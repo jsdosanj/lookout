@@ -45,7 +45,7 @@ func NewWebhookChannel(id, url string) (*WebhookChannel, error) {
 	if err := SafeWebhookURL(url); err != nil {
 		return nil, err
 	}
-	return &WebhookChannel{id: id, url: url, client: &http.Client{Timeout: 10 * time.Second}}, nil
+	return &WebhookChannel{id: id, url: url, client: safeHTTPClient(10 * time.Second)}, nil
 }
 
 func (c *WebhookChannel) ID() string { return c.id }

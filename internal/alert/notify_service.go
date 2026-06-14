@@ -46,7 +46,7 @@ func NewNotifyServiceChannel(id, baseURL, token string, to []string) (*NotifySer
 	return &NotifyServiceChannel{
 		id: id, endpoint: endpoint, token: token, to: to,
 		template: "lookout.alert",
-		client:   &http.Client{Timeout: 10 * time.Second},
+		client:   safeHTTPClient(10 * time.Second),
 	}, nil
 }
 
