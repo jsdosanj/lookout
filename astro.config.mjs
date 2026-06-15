@@ -2,10 +2,10 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
 
-// Served at https://dosanjhlabs.com/lookout/
+// Served at https://lookout.dosanjhlabs.com/
 export default defineConfig({
-  site: 'https://dosanjhlabs.com',
-  base: '/lookout',
+  site: 'https://lookout.dosanjhlabs.com',
+  base: '/',
   // Build into ./docs so the static output can be deployed from /docs.
   outDir: './docs',
   integrations: [sitemap()],
