@@ -29,14 +29,14 @@ func WriteStaticDemo(dir string, servers []*store.Server, now time.Time) error {
 	}
 
 	// Overview.
-	dash := buildDashView(servers, now, true)
+	dash := buildDashView(servers, now, true, nil)
 	dash.UserEmail, dash.UserRole, dash.CanManageUsers = "admin@lookout.app", "owner", true
 	if err := writeFile(filepath.Join(dir, "index.html"), dashboardTmpl, dash); err != nil {
 		return err
 	}
 	// Per-server detail.
 	for _, srv := range servers {
-		dv := buildDetailView(srv, now, true)
+		dv := buildDetailView(srv, now, true, nil)
 		dv.UserEmail, dv.UserRole, dv.CanManageUsers = "admin@lookout.app", "owner", true
 		if err := writeFile(filepath.Join(dir, "server-"+safeID(srv.ID)+".html"), detailTmpl, dv); err != nil {
 			return err
