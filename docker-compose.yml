@@ -1,0 +1,60 @@
+# Lookout control plane — self-host in one command.
+#
+#   LOOKOUT_TOKEN="$(openssl rand -hex 16)" \
+#   LOOKOUT_ADMIN_EMAIL="you@example.com" \
+#   LOOKOUT_ADMIN_PASSWORD="a-strong-password" \
+#     docker compose up -d
+#
+# Then open http://localhost:8080 and log in. Point each agent at this server with
+# the same LOOKOUT_TOKEN:
+#
+#   lookout-agent run --server http://YOUR_HOST:8080 --token "$LOOKOUT_TOKEN"
+#
+# (Run agents on the hosts you want to monitor — they are outbound-only and do not
+#  go in this compose file. Use a release binary or `go build ./cmd/lookout-agent`.)
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lookout-server:local
+    container_name: lookout-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # --- required on first run ------------------------------------------------
+      # Shared enrollment token agents present on first contact (then they get a
+      # per-agent token). Generate with: openssl rand -hex 16
+      LOOKOUT_TOKEN: "${LOOKOUT_TOKEN}"
+      # First owner account, created only on a fresh install.
+      LOOKOUT_ADMIN_EMAIL: "${LOOKOUT_ADMIN_EMAIL}"
+      LOOKOUT_ADMIN_PASSWORD: "${LOOKOUT_ADMIN_PASSWORD}"
+
+      # --- recommended in production -------------------------------------------
+      # Set true when this is served over HTTPS (behind a TLS-terminating proxy).
+      LOOKOUT_SECURE_COOKIES: "${LOOKOUT_SECURE_COOKIES:-false}"
+      # Reject the legacy shared token on /report once all agents are enrolled.
+      LOOKOUT_REQUIRE_AGENT_TOKEN: "${LOOKOUT_REQUIRE_AGENT_TOKEN:-false}"
+
+      # --- optional: alerting ---------------------------------------------------
+      # Comma-separated Slack/Teams/generic incoming-webhook URLs (SSRF-guarded).
+      LOOKOUT_ALERT_WEBHOOKS: "${LOOKOUT_ALERT_WEBHOOKS:-}"
+      # Comma-separated email recipients; live delivery needs a notify service.
+      LOOKOUT_ALERT_EMAIL: "${LOOKOUT_ALERT_EMAIL:-}"
+      LOOKOUT_NOTIFY_SERVICE_URL: "${LOOKOUT_NOTIFY_SERVICE_URL:-}"
+      LOOKOUT_NOTIFY_SERVICE_TOKEN: "${LOOKOUT_NOTIFY_SERVICE_TOKEN:-}"
+
+      # --- optional: SSO --------------------------------------------------------
+      LOOKOUT_BASE_URL: "${LOOKOUT_BASE_URL:-}"
+      LOOKOUT_OAUTH_GOOGLE_CLIENT_ID: "${LOOKOUT_OAUTH_GOOGLE_CLIENT_ID:-}"
+      LOOKOUT_OAUTH_GOOGLE_CLIENT_SECRET: "${LOOKOUT_OAUTH_GOOGLE_CLIENT_SECRET:-}"
+      LOOKOUT_OAUTH_GITHUB_CLIENT_ID: "${LOOKOUT_OAUTH_GITHUB_CLIENT_ID:-}"
+      LOOKOUT_OAUTH_GITHUB_CLIENT_SECRET: "${LOOKOUT_OAUTH_GITHUB_CLIENT_SECRET:-}"
+    volumes:
+      # Persist the JSON data files (hosts, users, agents, rules) across restarts.
+      - lookout-data:/data
+
+volumes:
+  lookout-data:

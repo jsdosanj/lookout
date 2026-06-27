@@ -4,11 +4,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -16,25 +18,59 @@ import (
 
 	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/auth"
+	"github.com/jsdosanj/lookout/internal/check"
+	"github.com/jsdosanj/lookout/internal/plugin"
 	"github.com/jsdosanj/lookout/internal/server"
 	"github.com/jsdosanj/lookout/internal/store"
 )
 
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
-	data := flag.String("data", "lookout-data.json", "path to the server data file")
+	data := flag.String("data", "lookout.db", "path to the embedded SQLite database")
 	authData := flag.String("auth-data", "lookout-users.json", "path to the users/sessions file")
 	agentData := flag.String("agent-data", "lookout-agents.json", "path to the per-agent credentials file")
 	ruleData := flag.String("rule-data", "lookout-rules.json", "path to the alert-rules file")
+	healthCfg := flag.String("health-config", "", "optional path to a JSON health-config file (per-host/group thresholds + watched services); applied and persisted on boot")
+	checksData := flag.String("checks", "", "optional path to a JSON file of TCP/HTTP checks to run as alert conditions")
+	pluginsData := flag.String("plugins", "", "optional path to a JSON file of Nagios-style custom-check plugins")
 	flag.Parse()
 
 	token := os.Getenv("LOOKOUT_TOKEN")                                // shared agent enrollment token
 	requireAgent := os.Getenv("LOOKOUT_REQUIRE_AGENT_TOKEN") == "true" // lock down legacy shared token
 	secureCookies := os.Getenv("LOOKOUT_SECURE_COOKIES") == "true"     // set true behind TLS
 
+	// Open the embedded SQLite store, migrating a pre-SQLite JSON data file on
+	// first boot so existing deployments keep their inventory and history.
+	_, statErr := os.Stat(*data)
+	freshDB := os.IsNotExist(statErr)
 	st, err := store.Open(*data)
 	if err != nil {
 		log.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+	if freshDB {
+		legacy := filepath.Join(filepath.Dir(*data), "lookout-data.json")
+		if b, rerr := os.ReadFile(legacy); rerr == nil {
+			if ierr := st.ImportLegacyJSON(b); ierr != nil {
+				log.Printf("legacy data migration from %s failed: %v", legacy, ierr)
+			} else {
+				log.Printf("migrated legacy data from %s into %s", legacy, *data)
+			}
+		}
+	}
+	if r := strings.TrimSpace(os.Getenv("LOOKOUT_HISTORY_RETENTION")); r != "" {
+		if d, perr := time.ParseDuration(r); perr != nil {
+			log.Printf("ignoring invalid LOOKOUT_HISTORY_RETENTION %q: %v", r, perr)
+		} else {
+			st.SetRetention(d)
+			log.Printf("sample retention set to %s", d)
+		}
+	}
+	if *healthCfg != "" {
+		if err := applyHealthConfig(st, *healthCfg); err != nil {
+			log.Fatalf("health config: %v", err)
+		}
+		log.Printf("health config loaded from %s", *healthCfg)
 	}
 	agents, err := store.OpenAgents(*agentData)
 	if err != nil {
@@ -52,6 +88,11 @@ func main() {
 	// rules seeded with a fleet warning+ rule (flap-damping + 30-minute reminder).
 	recorder := alert.NewRecorder(50)
 	eng, rules := buildAlertEngine(recorder, *ruleData)
+	if eng != nil {
+		// Persist acknowledgements in the store so a restart doesn't re-page an
+		// operator for an incident they already acked.
+		eng.SetAckStore(ackAdapter{st})
+	}
 
 	// Background session GC: sweep expired sessions until shutdown (clean exit).
 	stopGC := make(chan struct{})
@@ -60,12 +101,39 @@ func main() {
 
 	ctrl := server.New(st, agents, token, requireAgent, a, eng, recorder, rules)
 
+	// Load port/HTTP checks and custom-check plugins (optional). These run on a
+	// cadence and feed the same health → alert pipeline as host reports.
+	if *checksData != "" {
+		var checks []check.Check
+		if err := loadJSON(*checksData, &checks); err != nil {
+			log.Fatalf("load checks: %v", err)
+		}
+		ctrl.SetChecks(checks)
+		log.Printf("loaded %d check(s) from %s", len(checks), *checksData)
+	}
+	if *pluginsData != "" {
+		var plugins []plugin.Plugin
+		if err := loadJSON(*pluginsData, &plugins); err != nil {
+			log.Fatalf("load plugins: %v", err)
+		}
+		ctrl.SetPlugins(plugins)
+		log.Printf("loaded %d plugin(s) from %s", len(plugins), *pluginsData)
+	}
+
 	// Stale-host sweeper: re-evaluate the fleet on a cadence so a host that goes
 	// silent (and turns "stale" after store.StaleAfter) actually fires an alert.
 	// Without this, alerts only fire on report ingest and silent hosts never alert.
 	stopSweep := make(chan struct{})
 	ctrl.StartSweeper(time.Minute, stopSweep)
 	defer close(stopSweep)
+
+	// Check and plugin runners: probe targets / run plugins on the same cadence.
+	stopChecks := make(chan struct{})
+	ctrl.StartCheckRunner(time.Minute, stopChecks)
+	defer close(stopChecks)
+	stopPlugins := make(chan struct{})
+	ctrl.StartPluginRunner(time.Minute, stopPlugins)
+	defer close(stopPlugins)
 
 	srv := &http.Server{
 		Addr:              *addr,
@@ -174,6 +242,42 @@ func buildAlertEngine(rec *alert.Recorder, ruleData string) (*alert.Engine, *ale
 	ruleSet := rules.Rules()
 	log.Printf("alerting enabled: %d channel(s), %d rule(s)", len(channels), len(ruleSet))
 	return alert.NewEngine(ruleSet, channels, rec.Log), rules
+}
+
+// ackAdapter lets the SQLite store satisfy alert.AckStore. SaveAck/DeleteAck are
+// promoted from the embedded *store.Store; only LoadAcks needs a type translation
+// (so the store stays decoupled from the alert package).
+type ackAdapter struct{ *store.Store }
+
+func (a ackAdapter) LoadAcks() ([]alert.AckRecord, error) {
+	rows, err := a.Store.Acks()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]alert.AckRecord, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, alert.AckRecord{RuleID: r.RuleID, Server: r.Server, Until: r.Until})
+	}
+	return out, nil
+}
+
+// applyHealthConfig loads a JSON HealthConfig from path and persists it as the
+// active configuration (per-host/group thresholds + watched services).
+func applyHealthConfig(st *store.Store, path string) error {
+	var cfg store.HealthConfig
+	if err := loadJSON(path, &cfg); err != nil {
+		return err
+	}
+	return st.SetHealthConfig(&cfg)
+}
+
+// loadJSON reads and decodes a JSON file into v.
+func loadJSON(path string, v any) error {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, v)
 }
 
 // containsID reports whether id is already in ids.

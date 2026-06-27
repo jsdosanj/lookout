@@ -12,7 +12,9 @@ import (
 
 	"github.com/jsdosanj/lookout/internal/alert"
 	"github.com/jsdosanj/lookout/internal/auth"
+	"github.com/jsdosanj/lookout/internal/check"
 	"github.com/jsdosanj/lookout/internal/collect"
+	"github.com/jsdosanj/lookout/internal/plugin"
 	"github.com/jsdosanj/lookout/internal/store"
 )
 
@@ -26,6 +28,8 @@ type Server struct {
 	alerts       *alert.Engine     // alert rule engine + delivery; may be nil
 	activity     *alert.Recorder   // recent alert deliveries for the UI; may be nil
 	rules        *alert.RuleStore  // persisted, dashboard-editable rules; may be nil
+	checks       []check.Check     // TCP/HTTP checks run as alert conditions
+	plugins      []plugin.Plugin   // Nagios-style custom-check plugins run as alert conditions
 }
 
 // New creates a control-plane server. token authenticates agents; a authenticates
@@ -169,7 +173,7 @@ func (s *Server) maybeAlert(id string, now time.Time) {
 	if !ok {
 		return
 	}
-	h := store.Evaluate(srv, now)
+	h := store.Evaluate(srv, now, s.store.HealthConfig().For(id))
 	reason := ""
 	if len(h.Reasons) > 0 {
 		reason = h.Reasons[0]
@@ -186,8 +190,9 @@ func (s *Server) Sweep(now time.Time) {
 	if !s.alerts.Enabled() {
 		return
 	}
+	cfg := s.store.HealthConfig()
 	for _, srv := range s.store.List() {
-		h := store.Evaluate(srv, now)
+		h := store.Evaluate(srv, now, cfg.For(srv.ID))
 		reason := ""
 		if len(h.Reasons) > 0 {
 			reason = h.Reasons[0]
@@ -264,9 +269,10 @@ func (s *Server) handleListJSON(w http.ResponseWriter, r *http.Request) {
 		Health store.Health `json:"health"`
 	}
 	servers := s.store.List()
+	cfg := s.store.HealthConfig()
 	out := make([]item, 0, len(servers))
 	for _, srv := range servers {
-		out = append(out, item{Server: srv, Health: store.Evaluate(srv, now)})
+		out = append(out, item{Server: srv, Health: store.Evaluate(srv, now, cfg.For(srv.ID))})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)

@@ -90,7 +90,7 @@ type diskView struct {
 // ── handlers ─────────────────────────────────────────────────────────────────
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
-	dv := buildDashView(s.store.List(), time.Now().UTC(), false)
+	dv := buildDashView(s.store.List(), time.Now().UTC(), false, s.store.HealthConfig())
 	dv.Active = "overview"
 	if u := auth.CurrentUser(r); u != nil {
 		dv.UserEmail = u.Email
@@ -107,7 +107,7 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	dv := buildDetailView(srv, time.Now().UTC(), false)
+	dv := buildDetailView(srv, time.Now().UTC(), false, s.store.HealthConfig())
 	dv.Active = "overview"
 	if u := auth.CurrentUser(r); u != nil {
 		dv.UserEmail = u.Email
@@ -120,13 +120,13 @@ func (s *Server) handleDetail(w http.ResponseWriter, r *http.Request) {
 
 // ── view builders (shared by live handlers and the static demo generator) ────
 
-func buildDashView(servers []*store.Server, now time.Time, static bool) dashView {
+func buildDashView(servers []*store.Server, now time.Time, static bool, cfg *store.HealthConfig) dashView {
 	var d dashView
 	d.Chrome = true
 	d.Static = static
 	osCount := map[string]int{}
 	for _, srv := range servers {
-		h := store.Evaluate(srv, now)
+		h := store.Evaluate(srv, now, cfg.For(srv.ID))
 		d.Total++
 		plat := srv.LastReport.Host.Platform
 		if plat == "" {
@@ -199,8 +199,8 @@ func osDistJSON(osCount map[string]int) template.JS {
 	return template.JS(b)
 }
 
-func buildDetailView(srv *store.Server, now time.Time, static bool) detailView {
-	h := store.Evaluate(srv, now)
+func buildDetailView(srv *store.Server, now time.Time, static bool, cfg *store.HealthConfig) detailView {
+	h := store.Evaluate(srv, now, cfg.For(srv.ID))
 	rep := srv.LastReport
 	back := "/"
 	if static {

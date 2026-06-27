@@ -1,0 +1,99 @@
+name: release
+
+# Cross-compile the server + agent for every supported OS/arch IN CI (not on
+# anyone's machine) and attach the binaries to the GitHub Release for the tag.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+
+      - name: Build server + agent
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          dist="dist/lookout-${version}-${GOOS}-${GOARCH}"
+          mkdir -p "${dist}"
+          ext=""
+          if [ "${GOOS}" = "windows" ]; then ext=".exe"; fi
+          for cmd in lookout-server lookout-agent; do
+            go build -trimpath \
+              -ldflags="-s -w -X main.version=${version}" \
+              -o "${dist}/${cmd}${ext}" "./cmd/${cmd}"
+          done
+          cp LICENSE README.md "${dist}/"
+
+      - name: Package archive
+        id: package
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          base="lookout-${version}-${GOOS}-${GOARCH}"
+          cd dist
+          if [ "${GOOS}" = "windows" ]; then
+            zip -r "${base}.zip" "${base}"
+            echo "asset=dist/${base}.zip" >> "${GITHUB_OUTPUT}"
+          else
+            tar -czf "${base}.tar.gz" "${base}"
+            echo "asset=dist/${base}.tar.gz" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lookout-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ steps.package.outputs.asset }}
+          if-no-files-found: error
+
+  release:
+    name: publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          set -euo pipefail
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create / update the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.zip
+            artifacts/SHA256SUMS.txt

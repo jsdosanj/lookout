@@ -130,6 +130,10 @@ type Engine struct {
 	incidents map[string]*incident // key: ruleID|server
 	flaps     map[string]*flap     // key: ruleID|server
 	log       LogFunc
+	// acks persists acknowledgements (optional); savedAcks caches them so an ack
+	// survives a restart and is re-applied when its incident re-forms.
+	acks      AckStore
+	savedAcks map[string]time.Time // key: ruleID|server
 }
 
 // NewEngine builds an engine from rules and channels. logf may be nil.
@@ -144,6 +148,7 @@ func NewEngine(rules []Rule, channels []Channel, logf LogFunc) *Engine {
 		incidents: map[string]*incident{},
 		flaps:     map[string]*flap{},
 		log:       logf,
+		savedAcks: map[string]time.Time{},
 	}
 }
 
@@ -230,6 +235,7 @@ func (e *Engine) evalRule(r Rule, server string, sev Severity, reason string, no
 		// Healthy. If an incident was open, resolve it (dedupe: once).
 		if inc != nil {
 			delete(e.incidents, k)
+			e.clearAck(r.ID, server) // resolved: a future recurrence must re-alert
 			return []sendJob{{
 				n: Notification{RuleID: r.ID, RuleName: r.Name, Server: server,
 					Severity: inc.severity.String(), Resolved: true, Reason: reason, At: now},
@@ -239,8 +245,14 @@ func (e *Engine) evalRule(r Rule, server string, sev Severity, reason string, no
 		return nil
 
 	case inc == nil:
-		// New incident: fire once.
-		e.incidents[k] = &incident{severity: confirmed, firstFired: now, lastFired: now, reason: reason}
+		// New incident: fire once. If a persisted ack covers this (rule,server) —
+		// e.g. the operator acked it, then the control plane restarted — re-apply it
+		// so the reminder cascade stays silenced across the restart.
+		ni := &incident{severity: confirmed, firstFired: now, lastFired: now, reason: reason}
+		if until, ok := e.savedAcks[k]; ok {
+			ni.ackedUntil = until
+		}
+		e.incidents[k] = ni
 		return []sendJob{{
 			n: Notification{RuleID: r.ID, RuleName: r.Name, Server: server,
 				Severity: confirmed.String(), Reason: reason, At: now},
@@ -255,6 +267,7 @@ func (e *Engine) evalRule(r Rule, server string, sev Severity, reason string, no
 		inc.lastFired = now
 		inc.reason = reason
 		inc.ackedUntil = time.Time{}
+		e.clearAck(r.ID, server) // severity changed: the prior ack no longer applies
 		return []sendJob{{
 			n: Notification{RuleID: r.ID, RuleName: r.Name, Server: server,
 				Severity: confirmed.String(), Reason: reason, At: now},
@@ -315,6 +328,7 @@ func (e *Engine) Acknowledge(ruleID, server string, until time.Time) bool {
 		until = inc.firstFired.AddDate(100, 0, 0)
 	}
 	inc.ackedUntil = until
+	e.saveAck(ruleID, server, until) // persist so the ack survives a restart
 	return true
 }
 

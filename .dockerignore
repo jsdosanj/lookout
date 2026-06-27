@@ -1,0 +1,17 @@
+# Keep the build context small and free of local artifacts/secrets.
+.git
+.github
+docs
+*.md
+lookout-agent
+lookout-agent-*
+lookout-server
+lookout-server-*
+*.exe
+
+# Local runtime data files (never bake these into an image).
+lookout-data.json
+lookout-users.json
+lookout-agents.json
+lookout-rules.json
+.env
