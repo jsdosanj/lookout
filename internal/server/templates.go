@@ -290,7 +290,7 @@ const shellTop = `<div class="app">
     </div>
   </aside>{{end}}
   <main class="content">
-  {{if .UserEmail}}<div class="topbar"><div>{{if .Static}}<span class="tb-role" style="background:rgba(245,158,11,.15);color:var(--warn)">Live demo</span>{{end}}</div>
+  {{if .UserEmail}}<div class="topbar"><div>{{if .Static}}<span class="tb-role" style="background:rgba(245,158,11,.15);color:var(--warn)">Demo</span>{{end}}</div>
     <div class="tb-acct"><span class="tb-role">{{.UserRole}}</span><a href="{{if .Static}}#{{else}}/account{{end}}" title="Account">{{.UserEmail}}</a>{{if not .Static}}<form method="post" action="/logout" style="margin:0">{{.CSRF}}<button class="linkbtn">Sign out</button></form>{{end}}</div>
   </div>{{end}}`
 

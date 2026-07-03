@@ -22,7 +22,7 @@ func demoPage(active string) pageView {
 
 // WriteStaticDemo renders a frozen, self-contained copy of the whole dashboard
 // (overview, per-server detail, the content pages, and the admin console) into
-// dir with relative links, so the live demo on GitHub Pages shows the full UI.
+// dir with relative links, so the demo on GitHub Pages shows the full UI.
 func WriteStaticDemo(dir string, servers []*store.Server, now time.Time) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
