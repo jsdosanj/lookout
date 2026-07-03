@@ -1,0 +1,15 @@
+[
+  {
+    "_comment": "Passed via --plugins. Nagios-convention custom checks: exit 0=ok, 1=warning, 2=critical, 3=unknown; the first stdout line is the summary. Command is the ALLOW-LISTED BASE NAME of the executable (never a path); Args are passed verbatim as argv with no shell.",
+    "Name": "TLS cert expiry",
+    "Command": "check_ssl_cert",
+    "Args": ["-H", "example.com", "-w", "30", "-c", "7"],
+    "Server": "web-01"
+  },
+  {
+    "Name": "HTTP endpoint",
+    "Command": "check_http",
+    "Args": ["-H", "example.com", "-u", "/health", "-s", "ok"],
+    "Group": "web"
+  }
+]

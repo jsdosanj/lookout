@@ -222,11 +222,18 @@ func buildAlertEngine(rec *alert.Recorder, ruleData string) (*alert.Engine, *ale
 			}
 		}
 		if !containsID(channelIDs, "email") {
-			// Fallback: register the local channel so rules/UI reference "email";
-			// its Send returns an explicit not-configured error (no fake success).
-			channels = append(channels, alert.NewEmailChannel("email", emailTo, nil))
+			// Self-hosted transport: deliver email directly via the operator's own
+			// SMTP relay (LOOKOUT_SMTP_*), with zero dependency on our cloud. If no
+			// SMTP host is set, register the channel anyway so rules/UI reference
+			// "email"; its Send then returns an explicit not-configured error.
+			smtpCfg := smtpConfigFromEnv()
+			channels = append(channels, alert.NewEmailChannel("email", emailTo, smtpCfg))
 			channelIDs = append(channelIDs, "email")
-			log.Print("NOTE: alert email recipients set but notify service not configured — set LOOKOUT_NOTIFY_SERVICE_URL/_TOKEN for live delivery")
+			if smtpCfg != nil {
+				log.Print("alert email: live delivery via self-hosted SMTP (LOOKOUT_SMTP_*)")
+			} else {
+				log.Print("NOTE: alert email recipients set but no transport configured — set LOOKOUT_SMTP_HOST/PORT/USER/PASS/FROM for self-hosted SMTP, or LOOKOUT_NOTIFY_SERVICE_URL/_TOKEN")
+			}
 		}
 	}
 
@@ -242,6 +249,31 @@ func buildAlertEngine(rec *alert.Recorder, ruleData string) (*alert.Engine, *ale
 	ruleSet := rules.Rules()
 	log.Printf("alerting enabled: %d channel(s), %d rule(s)", len(channels), len(ruleSet))
 	return alert.NewEngine(ruleSet, channels, rec.Log), rules
+}
+
+// smtpConfigFromEnv builds a self-hosted SMTP config from LOOKOUT_SMTP_*. It
+// returns nil when LOOKOUT_SMTP_HOST is unset, so email falls back to the
+// not-configured error. Port defaults to 587 (submission/STARTTLS).
+func smtpConfigFromEnv() *alert.SMTPConfig {
+	host := strings.TrimSpace(os.Getenv("LOOKOUT_SMTP_HOST"))
+	if host == "" {
+		return nil
+	}
+	port := 587
+	if p := strings.TrimSpace(os.Getenv("LOOKOUT_SMTP_PORT")); p != "" {
+		if n, err := strconv.Atoi(p); err == nil {
+			port = n
+		} else {
+			log.Printf("ignoring invalid LOOKOUT_SMTP_PORT %q: %v", p, err)
+		}
+	}
+	return &alert.SMTPConfig{
+		Host: host,
+		Port: port,
+		User: strings.TrimSpace(os.Getenv("LOOKOUT_SMTP_USER")),
+		Pass: os.Getenv("LOOKOUT_SMTP_PASS"),
+		From: strings.TrimSpace(os.Getenv("LOOKOUT_SMTP_FROM")),
+	}
 }
 
 // ackAdapter lets the SQLite store satisfy alert.AckStore. SaveAck/DeleteAck are

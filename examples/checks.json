@@ -1,0 +1,17 @@
+[
+  {
+    "_comment": "Passed via --checks. Each entry is a TCP or HTTP probe run on the sweeper cadence; a failure feeds the same health -> alert pipeline as host reports.",
+    "ID": "web-https",
+    "Name": "Website responds",
+    "Type": "http",
+    "Target": "https://example.com/health",
+    "ExpectStatus": 200,
+    "Keyword": "ok"
+  },
+  {
+    "ID": "db-port",
+    "Name": "Postgres port open",
+    "Type": "tcp",
+    "Target": "db-01.internal:5432"
+  }
+]

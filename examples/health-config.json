@@ -1,0 +1,37 @@
+{
+  "_comment": "Passed via --health-config; persisted and applied on boot. A threshold set to 0 (or omitted) INHERITS the built-in default (it does not disable the signal). CPU and load alerting are ON by default (cpu 85/95, load 1.0/2.0 per core); the seeded rule's 2-observation flap window means a single-sample spike will not page. To relax a signal on hot hosts, raise its thresholds here. See docs/manual/configuration.md.",
+
+  "defaults": {
+    "disk_warn_pct": 80,
+    "disk_crit_pct": 90,
+    "mem_warn_pct": 90,
+    "cpu_warn_pct": 85,
+    "cpu_crit_pct": 95,
+    "load_warn_per_core": 1.0,
+    "load_crit_per_core": 2.0
+  },
+
+  "groups": {
+    "batch": {
+      "_comment": "Batch/CI boxes run hot on purpose — raise CPU/load so normal load does not page.",
+      "cpu_warn_pct": 97,
+      "cpu_crit_pct": 99,
+      "load_warn_per_core": 4.0,
+      "load_crit_per_core": 8.0
+    }
+  },
+
+  "hosts": {
+    "db-01": {
+      "_comment": "This host must keep postgres running; a stopped/absent watched service is critical.",
+      "disk_warn_pct": 70,
+      "disk_crit_pct": 85,
+      "watch_services": ["postgresql"]
+    }
+  },
+
+  "host_group": {
+    "ci-runner-01": "batch",
+    "ci-runner-02": "batch"
+  }
+}

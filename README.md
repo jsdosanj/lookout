@@ -46,13 +46,16 @@ yourself, fork it, ship it — no tiers, no license keys, no phone-home.
   by severity, with dedupe, flap-damping, escalation reminders, resolve notices,
   acknowledge/snooze, and a stale-host sweeper that alerts when an agent goes silent.
   Delivery to **Slack / Teams / generic webhooks is live** (each URL is SSRF-guarded);
-  **email is live when you point it at a notification service**, otherwise it returns
-  an explicit "not configured" error.
+  **email is live via self-hosted SMTP** (`LOOKOUT_SMTP_*`) or the shared notification
+  service, otherwise it returns an explicit "not configured" error.
 
 **What the alert engine watches today:** health is derived from **disk** usage
-(>=80% warning, >=90% critical), **memory** usage (>=90% warning), and
-**staleness** (no report for 5 minutes). CPU, load, and service state are
-*collected and charted* but do not drive alerts yet — see [Roadmap](#roadmap).
+(>=80% warning, >=90% critical), **memory** usage (>=90% warning), **CPU** usage
+(>=85% warning, >=95% critical), **load per core** (>=1.0 warning, >=2.0 critical),
+**watched services** (a stopped/absent service is critical), and **staleness** (no
+report for 5 minutes). All thresholds and watched services are configurable
+per-host/per-group via `--health-config` (see [`examples/`](examples/)); the seeded
+rule's 2-observation flap window keeps a single-sample CPU/load spike from paging.
 
 ---
 
@@ -168,12 +171,9 @@ Full details, every flag and env var, and the security model are in the
 These are **not built yet** — tracked here and in
 [`docs/manual/roadmap.md`](docs/manual/roadmap.md):
 
-- **More alert conditions** — service-down / port / HTTP checks and CPU/load alerts
-  that actually fire (today CPU/load/services are collected but don't alert).
-- **Configurable thresholds & custom-check plugins** — per-host overrides plus a
-  plugin runner (drop a script + manifest, Nagios-compatible).
-- **A real datastore** — SQLite/Postgres for config/state and a time-series store for
-  history, replacing the JSON file and the ~3-hour in-memory window.
+- **PostgreSQL + time-series datastore** — the embedded SQLite store ships today
+  (config/state/history via `--data`); Postgres and a proper time-series store for
+  high-cardinality metrics are still planned (today: the ~3-hour in-memory window).
 - **Per-agent mTLS** — short-lived per-host credentials instead of bearer-over-TLS.
 - **Maintenance windows**, persisted ack/snooze + activity log, more integrations,
   and per-group/per-host RBAC scoping.
