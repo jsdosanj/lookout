@@ -20,8 +20,17 @@ one place.
   brute-force lockout, org units.
 - **Alerting**: rule engine (server/severity/channels/flap-window/repeat), dedupe,
   flap-damping, escalation reminders, resolve notices, the stale-host sweeper,
-  acknowledge/snooze, dashboard rule editing, recent-activity log.
-- **Channels**: webhook (Slack/Teams/generic) — **live**; email via the shared
+  acknowledge/snooze (**persisted** across restarts in the SQLite store), dashboard
+  rule editing, recent-activity log.
+- **Configurable health**: per-host / per-group thresholds and watched services via
+  `--health-config` (persisted), plus TCP/HTTP checks (`--checks`) and Nagios-style
+  custom-check plugins (`--plugins`). Disk, memory, CPU, load-per-core, watched
+  services, and staleness all drive alerts. See [`examples/`](../../examples/).
+- **Datastore**: an embedded **SQLite** store for inventory, history, config, and
+  acks (`--data` defaults to `lookout.db`), migrating a pre-SQLite JSON data file on
+  first boot.
+- **Channels**: webhook (Slack/Teams/generic) — **live**; email via self-hosted
+  SMTP (`LOOKOUT_SMTP_*`) — **live when configured**; email via the shared
   notification service — **live when configured**.
 - **Security**: SSRF guard on outbound webhook/notify URLs (with DNS-rebinding
   re-check), constant-time token checks, TOFU hostname pinning, hardening headers,
@@ -31,9 +40,7 @@ one place.
 
 | Item | Status today | Where it's discussed |
 | --- | --- | --- |
-| **Live SMTP email** | Payload/rendering is real and unit-tested; the SMTP send is not implemented. The local `email` channel returns "SMTP not configured" / "live SMTP send not yet implemented" rather than faking. `LOOKOUT_SMTP_*` is reserved but not read. Use the notify service for live email. | [Alerting → email](alerting.md#email-channel-and-the-notify-service) |
-| **The notify-service *server*** | Lookout speaks the `POST /notify/send` client contract; the service that receives it (and holds the provider key, dedupe, retry, audit) is a separate platform component, not in this repo. | [Alerting → email](alerting.md#email-channel-and-the-notify-service) |
-| **Acknowledge/snooze persistence** | Acks and snoozes are tracked **in memory**; a control-plane restart loses them, so reminders can resume on a still-open incident. | [Alerting → acknowledge & snooze](alerting.md#acknowledge--snooze) |
+| **The notify-service *server*** | Lookout speaks the `POST /notify/send` client contract; the service that receives it (and holds the provider key, dedupe, retry, audit) is a separate platform component, not in this repo. Self-hosters don't need it — set `LOOKOUT_SMTP_*` for live email with no cloud dependency. | [Alerting → email](alerting.md#email-channel-and-the-notify-service) |
 | **Recent-activity persistence** | The alert activity log is in memory (last 50, shows 20); cleared on restart. | [Alerting → recent activity](alerting.md#recent-alert-activity) |
 | **Universal Collector (`collect`)** | Experimental: signs and ships envelopes to a separate "Keystone" ingest plane; uses a static local capability grant with a `TODO` to fetch a signed policy bundle from `/v1/policy`. Does **not** feed the Lookout dashboard. | [Monitoring → Universal Collector](monitoring.md#the-universal-collector-collect-subcommand) |
 
@@ -41,14 +48,13 @@ one place.
 
 From the project's [implementation plan](../../IMPLEMENTATION_PLAN.md):
 
-- **Configurable thresholds & custom checks** — per-host overrides and
-  Nagios-compatible + simple custom plugins (drop a script + manifest).
 - **Scheduled maintenance windows** — first-class silencing for planned work (today:
   snooze / narrow the rule / stop the agent).
 - **Per-agent mTLS** — replace the bearer-token-over-TLS-proxy MVP transport with
   mutual TLS and short-lived per-host credentials.
-- **Real datastore** — SQLite/PostgreSQL for config/state and a proper time-series
-  database for metrics/history (replacing the JSON store and 180-sample window).
+- **PostgreSQL + time-series datastore** — the embedded SQLite store ships today
+  (config/state/history); PostgreSQL and a proper time-series database for
+  high-cardinality metrics are still planned (today: the ~180-sample window).
 - **More integrations** — the Integrations page lists many connectors (Jira,
   ServiceNow, Jamf, Intune, Kandji, JumpCloud, Active Directory, Sightline, SMS, …)
   marked **In development**; only Slack/Teams/webhook are live today.

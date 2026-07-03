@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/smtp"
+	"strings"
 	"time"
 )
 
@@ -73,11 +75,11 @@ func (c *WebhookChannel) Send(n Notification) error {
 	return nil
 }
 
-// EmailChannel is the email transport. The decision logic and payload are real
-// and unit-tested; the actual SMTP send is deliberately not wired, because it
-// needs the operator's SMTP host and credentials (see the README/Notifications
-// page). The boundary is honest: configuring email without SMTP creds returns a
-// clear "not configured" error rather than silently dropping or faking a send.
+// EmailChannel is the email transport. The decision logic, payload, and — when
+// SMTPConfig is supplied — the live send are all real. A self-hoster sets
+// LOOKOUT_SMTP_* to get real email alerts with no dependency on our cloud. The
+// boundary is honest: configuring email without SMTP creds returns a clear "not
+// configured" error rather than silently dropping or faking a send.
 type EmailChannel struct {
 	id   string
 	to   []string
@@ -102,8 +104,7 @@ func NewEmailChannel(id string, to []string, smtp *SMTPConfig) *EmailChannel {
 func (c *EmailChannel) ID() string { return c.id }
 
 // RenderEmail builds the subject and body for a notification. This is pure and
-// unit-tested so the email payload is verified even though the SMTP send is not
-// yet wired.
+// unit-tested so the email payload is verified independently of the SMTP send.
 func (c *EmailChannel) RenderEmail(n Notification) (subject, body string) {
 	subject = fmt.Sprintf("[Lookout] %s — %s", n.Server, n.Severity)
 	if n.Resolved {
@@ -120,12 +121,37 @@ func (c *EmailChannel) RenderEmail(n Notification) (subject, body string) {
 
 func (c *EmailChannel) Send(n Notification) error {
 	if c.smtp == nil {
-		// TODO(live-smtp): wire net/smtp once the operator provides SMTP host,
-		// port, user, pass, and From (LOOKOUT_SMTP_*). Until then we refuse rather
-		// than pretend: the payload above is real, the transport is not yet live.
+		// No transport configured. We refuse rather than pretend: the payload is
+		// real, but there is nowhere to send it.
 		return fmt.Errorf("email channel %q: SMTP not configured", c.id)
 	}
-	// TODO(live-smtp): smtp.SendMail(addr, auth, from, to, msg). Intentionally
-	// unimplemented to avoid shipping unverified live mail in this wave.
-	return fmt.Errorf("email channel %q: live SMTP send not yet implemented", c.id)
+	subject, body := c.RenderEmail(n)
+	from := c.smtp.From
+	if from == "" {
+		from = c.smtp.User
+	}
+	addr := fmt.Sprintf("%s:%d", c.smtp.Host, c.smtp.Port)
+	// net/smtp.SendMail negotiates STARTTLS automatically when the server
+	// advertises it, and PLAIN auth refuses to send credentials over an
+	// unencrypted, non-localhost link — so credentials are never sent in the
+	// clear. auth is nil for an unauthenticated relay (User unset).
+	var auth smtp.Auth
+	if c.smtp.User != "" {
+		auth = smtp.PlainAuth("", c.smtp.User, c.smtp.Pass, c.smtp.Host)
+	}
+	if err := smtp.SendMail(addr, auth, from, c.to, buildEmailMessage(from, c.to, subject, body)); err != nil {
+		return fmt.Errorf("email channel %q: %w", c.id, err)
+	}
+	return nil
+}
+
+// buildEmailMessage assembles an RFC-5322 message with CRLF line endings for the
+// SMTP DATA phase. The rendered body uses "\n"; SMTP requires "\r\n".
+func buildEmailMessage(from string, to []string, subject, body string) []byte {
+	headers := "From: " + from + "\r\n" +
+		"To: " + strings.Join(to, ", ") + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n"
+	return []byte(headers + strings.ReplaceAll(body, "\n", "\r\n"))
 }

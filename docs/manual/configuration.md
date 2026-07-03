@@ -11,6 +11,7 @@ no config file to edit — rules are the one thing edited in the UI and stored a
   - [Alerting](#alerting)
   - [SSO / OAuth](#sso--oauth)
 - [Environment variables — agent](#environment-variables--agent)
+- [Configurable health checks](#configurable-health-checks)
 - [Data files](#data-files)
 - [Defaults & built-in constants](#defaults--built-in-constants)
 - [A complete production example](#a-complete-production-example)
@@ -24,20 +25,29 @@ no config file to edit — rules are the one thing edited in the UI and stored a
 | Flag | Default | Meaning |
 | --- | --- | --- |
 | `--addr` | `:8080` | Listen address (host:port). |
-| `--data` | `lookout-data.json` | Path to the server/report store. |
+| `--data` | `lookout.db` | Path to the embedded **SQLite** database (inventory, history, config, acks). On first boot a pre-SQLite `lookout-data.json` next to it is migrated in automatically. |
 | `--auth-data` | `lookout-users.json` | Path to the users/sessions/org-units store. |
 | `--agent-data` | `lookout-agents.json` | Path to the per-agent credentials + hostname-pin store. |
 | `--rule-data` | `lookout-rules.json` | Path to the persisted alert-rules file. |
+| `--health-config` | *(unset)* | Optional JSON file of per-host/group thresholds + watched services; **applied and persisted** on boot. See [Configurable health checks](#configurable-health-checks). |
+| `--checks` | *(unset)* | Optional JSON file of TCP/HTTP checks run on the sweeper cadence. |
+| `--plugins` | *(unset)* | Optional JSON file of Nagios-style custom-check plugins. |
 
 Example:
 
 ```bash
 ./lookout-server --addr 127.0.0.1:9000 \
-  --data /var/lib/lookout/data.json \
+  --data /var/lib/lookout/lookout.db \
   --auth-data /var/lib/lookout/users.json \
   --agent-data /var/lib/lookout/agents.json \
-  --rule-data /var/lib/lookout/rules.json
+  --rule-data /var/lib/lookout/rules.json \
+  --health-config /etc/lookout/health-config.json \
+  --checks /etc/lookout/checks.json \
+  --plugins /etc/lookout/plugins.json
 ```
+
+Ready-to-edit examples for the last three flags live in
+[`examples/`](../../examples/).
 
 ---
 
@@ -90,14 +100,20 @@ envelopes to a separate ingest plane; **not** the dashboard path):
 | --- | --- | --- | --- |
 | `LOOKOUT_ALERT_WEBHOOKS` | Webhook alerts | *(unset)* | Comma-separated incoming-webhook URLs (Slack/Teams/generic). Each is SSRF-validated; bad ones are logged & skipped. IDs: `webhook`, `webhook-2`, … |
 | `LOOKOUT_ALERT_EMAIL` | Email alerts | *(unset)* | Comma-separated recipient addresses. Registers the `email` channel. |
-| `LOOKOUT_NOTIFY_SERVICE_URL` | Live email | *(unset)* | Base URL of the shared notification service (Lookout POSTs to `<URL>/notify/send`). SSRF-checked. |
-| `LOOKOUT_NOTIFY_SERVICE_TOKEN` | Live email | *(unset)* | Bearer token authenticating Lookout to that service. Without it, email falls back to the not-yet-live local SMTP channel. |
-| `LOOKOUT_SMTP_*` | *(reserved)* | — | **Deferred / not read today.** Reserved for the future direct-SMTP transport. |
+| `LOOKOUT_SMTP_HOST` | Self-hosted live email | *(unset)* | SMTP relay hostname. Set it (with `LOOKOUT_ALERT_EMAIL`) for **live email with no cloud dependency**. STARTTLS is used automatically when the server advertises it. |
+| `LOOKOUT_SMTP_PORT` | No | `587` | SMTP submission port. |
+| `LOOKOUT_SMTP_USER` | No | *(unset)* | SMTP username. When set, PLAIN auth is used (credentials are refused over an unencrypted, non-localhost link). Unset = unauthenticated relay. |
+| `LOOKOUT_SMTP_PASS` | No | *(unset)* | SMTP password. |
+| `LOOKOUT_SMTP_FROM` | No | `LOOKOUT_SMTP_USER` | Envelope/From address. |
+| `LOOKOUT_NOTIFY_SERVICE_URL` | Managed live email | *(unset)* | Base URL of the shared notification service (Lookout POSTs to `<URL>/notify/send`). SSRF-checked. Optional alternative to self-hosted SMTP. |
+| `LOOKOUT_NOTIFY_SERVICE_TOKEN` | Managed live email | *(unset)* | Bearer token authenticating Lookout to that service. |
 
 How the alerting variables combine:
 
 - **`LOOKOUT_ALERT_WEBHOOKS` only** → live webhook alerting (recommended starting
   point).
+- **`LOOKOUT_ALERT_EMAIL` + `LOOKOUT_SMTP_HOST` (+ user/pass/from)** → live email via
+  the operator's own SMTP relay, no cloud dependency.
 - **`LOOKOUT_ALERT_EMAIL` + `LOOKOUT_NOTIFY_SERVICE_URL` + `LOOKOUT_NOTIFY_SERVICE_TOKEN`**
   → live email via the shared notification service.
 - **`LOOKOUT_ALERT_EMAIL` only** → an `email` channel exists, but every send is
@@ -128,15 +144,59 @@ Set the provider callback URL to `<LOOKOUT_BASE_URL>/auth/<provider>/callback`.
 
 ---
 
+## Configurable health checks
+
+Three optional JSON files extend the built-in health scoring. Copy the
+ready-to-edit templates in [`examples/`](../../examples/) and point the matching
+flag at them.
+
+### Thresholds & watched services (`--health-config`)
+
+A `HealthConfig` sets global defaults plus per-group and per-host overrides for the
+health signals, and names services that must be running. It is **applied and
+persisted** on boot. Effective thresholds resolve in layers: built-in defaults →
+config `defaults` → the host's group override → the host override, each filling only
+the fields it sets.
+
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `disk_warn_pct` / `disk_crit_pct` | Disk usage % | `80` / `90` |
+| `mem_warn_pct` / `mem_crit_pct` | Memory usage % | `90` / *(off)* |
+| `cpu_warn_pct` / `cpu_crit_pct` | CPU usage % | `85` / `95` |
+| `load_warn_per_core` / `load_crit_per_core` | 1-min load ÷ cores | `1.0` / `2.0` |
+| `watch_services` | Service names that must be `running` (stopped/absent = critical) | *(none)* |
+
+> **A `0` or omitted value inherits the default — it does not disable the signal.**
+> CPU and load alerting are ON by default; to relax them on hosts that run hot,
+> raise their thresholds (e.g. per a `batch` group). Because the seeded rule uses a
+> 2-observation flap window, a single-sample CPU/load spike will **not** page — a
+> breach must persist across two consecutive reports before it fires.
+
+### Checks (`--checks`)
+
+An array of TCP/HTTP probes run on the sweeper cadence; a failure feeds the same
+health → alert pipeline as host reports. Fields: `ID`, `Name`, `Type` (`tcp` or
+`http`), `Target` (`host:port` for tcp, a full URL for http), and for http the
+optional `ExpectStatus` and `Keyword`.
+
+### Plugins (`--plugins`)
+
+An array of Nagios-convention custom checks (exit `0` ok / `1` warning / `2`
+critical / `3` unknown; first stdout line is the summary). Fields: `Name`,
+`Command` (the allow-listed **base name** of the executable — never a path), `Args`
+(passed verbatim as argv, no shell), and optional `Server` / `Group` metadata.
+
+---
+
 ## Data files
 
-All written by the control plane in its working directory (or wherever the flags
-point), as JSON, mode **`0600`** (owner-only read/write), updated **atomically** (temp
-file + rename):
+Written by the control plane in its working directory (or wherever the flags
+point). The JSON stores are mode **`0600`** (owner-only) and updated **atomically**
+(temp file + rename); the SQLite database is managed by the driver.
 
 | File | Flag | Contents |
 | --- | --- | --- |
-| `lookout-data.json` | `--data` | Latest report + rolling history per server. |
+| `lookout.db` | `--data` | **SQLite**: server inventory, rolling history, health config, acknowledgements. A legacy `lookout-data.json` beside it is migrated in on first boot. |
 | `lookout-users.json` | `--auth-data` | Users (bcrypt hashes, TOTP secrets), sessions, org units. |
 | `lookout-agents.json` | `--agent-data` | Per-agent tokens, hostname→identity pins. |
 | `lookout-rules.json` | `--rule-data` | Persisted, dashboard-editable alert rules. |
@@ -168,9 +228,11 @@ These are not configurable today but are useful to know:
 | Session GC interval | `10m` | Expired-session cleanup. |
 | Login/MFA lockout | `5 fails / 15m → 15m lock` | Brute-force resistance. |
 | Webhook send timeout | `10s` | Per webhook/notify-service delivery. |
-| Disk warning / critical | `≥ 80%` / `≥ 90%` | Health thresholds. |
-| Memory warning | `≥ 90%` | Health threshold. |
-| Seeded rule | fleet `*`, `warning+`, flap `2`, repeat `30m` | First-run alerting. |
+| Disk warning / critical | `≥ 80%` / `≥ 90%` | Health thresholds (configurable via `--health-config`). |
+| Memory warning | `≥ 90%` | Health threshold (configurable). |
+| CPU warning / critical | `≥ 85%` / `≥ 95%` | Health thresholds (configurable). |
+| Load warning / critical | `≥ 1.0` / `≥ 2.0` per core | Health thresholds (configurable). |
+| Seeded rule | fleet `*`, `warning+`, flap `2`, repeat `30m` | First-run alerting. The flap window of `2` means a signal must breach on **two consecutive** reports before it fires, so a single-sample CPU/load spike does not page. |
 | Activity log size | `50` kept, `20` shown | Recent alert deliveries. |
 
 ---
@@ -192,7 +254,7 @@ LOOKOUT_NOTIFY_SERVICE_URL='https://api.dosanjhlabs.com' \
 LOOKOUT_NOTIFY_SERVICE_TOKEN='REPLACE-service-token' \
 LOOKOUT_OAUTH_GOOGLE_CLIENT_ID='REPLACE' \
 LOOKOUT_OAUTH_GOOGLE_CLIENT_SECRET='REPLACE' \
-  ./lookout-server --addr 127.0.0.1:8080 --data /var/lib/lookout/data.json \
+  ./lookout-server --addr 127.0.0.1:8080 --data /var/lib/lookout/lookout.db \
     --auth-data /var/lib/lookout/users.json \
     --agent-data /var/lib/lookout/agents.json \
     --rule-data /var/lib/lookout/rules.json

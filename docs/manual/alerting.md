@@ -209,8 +209,9 @@ variables on the control plane; rules then reference them by **ID**.
 | Channel type | Default ID(s) | Status | Configured by |
 | --- | --- | --- | --- |
 | Webhook (Slack/Teams/generic) | `webhook`, `webhook-2`, … | **Live** | `LOOKOUT_ALERT_WEBHOOKS` |
+| Email via self-hosted SMTP | `email` | **Live** (when `LOOKOUT_SMTP_HOST` is set) | `LOOKOUT_ALERT_EMAIL` + `LOOKOUT_SMTP_HOST` (+ user/pass/from) |
 | Email via notify service | `email` | **Live** (when the notify service is configured) | `LOOKOUT_ALERT_EMAIL` + `LOOKOUT_NOTIFY_SERVICE_URL` + `LOOKOUT_NOTIFY_SERVICE_TOKEN` |
-| Email, local SMTP | `email` | **Deferred** (fallback; returns "not configured") | `LOOKOUT_ALERT_EMAIL` only |
+| Email, no transport | `email` | Fallback; `Send` returns "not configured" | `LOOKOUT_ALERT_EMAIL` only |
 
 ### Webhook channel (Slack / Teams / generic)
 
@@ -284,25 +285,27 @@ alert email: live delivery via shared notification service
 > `LOOKOUT_NOTIFY_SERVICE_URL` at a service that doesn't implement the contract, sends
 > fail and are recorded as failed in the activity log.
 
-**Fallback — local SMTP channel (Deferred / not yet live).** If you set
-`LOOKOUT_ALERT_EMAIL` **without** the notify-service variables, Lookout still
-registers an `email` channel so rules and the UI can reference it — but its `Send`
-returns an explicit **"SMTP not configured"** error rather than silently dropping or
-faking a send. You'll see:
+**Self-hosted — live SMTP channel.** If you set `LOOKOUT_ALERT_EMAIL` together with
+`LOOKOUT_SMTP_HOST` (and, for an authenticated relay, `LOOKOUT_SMTP_USER` /
+`LOOKOUT_SMTP_PASS` / `LOOKOUT_SMTP_FROM`), Lookout delivers email **directly through
+your own SMTP relay** — real email alerts with **no dependency on our cloud**. The
+send uses `net/smtp`: STARTTLS is negotiated automatically when the server advertises
+it, and PLAIN auth refuses to transmit credentials over an unencrypted, non-localhost
+link. `LOOKOUT_SMTP_PORT` defaults to `587`. You'll see:
 
 ```
-NOTE: alert email recipients set but notify service not configured — set
-LOOKOUT_NOTIFY_SERVICE_URL/_TOKEN for live delivery
+alert email: live delivery via self-hosted SMTP (LOOKOUT_SMTP_*)
 ```
 
-The email **payload** (subject + body rendering) is real and unit-tested; only the
-live SMTP transport is intentionally unimplemented in this wave. `LOOKOUT_SMTP_*`
-variables are reserved for that future work but are **not read today**. See
-[Roadmap & deferred items](roadmap.md).
+If you set `LOOKOUT_ALERT_EMAIL` with **neither** SMTP nor the notify-service
+variables, Lookout still registers an `email` channel so rules and the UI can
+reference it — but its `Send` returns an explicit **"SMTP not configured"** error
+rather than silently dropping or faking a send.
 
-> **Net:** for live email today, use the notify service. Without it, the `email`
-> channel exists but every delivery is recorded as **failed** ("SMTP not
-> configured"). Webhooks are the fully self-contained, live option.
+> **Net:** for live email, self-hosters set `LOOKOUT_SMTP_*`; the managed notify
+> service is an alternative. With neither, the `email` channel exists but every
+> delivery is recorded as **failed** ("SMTP not configured"). Webhooks remain the
+> fully self-contained, live option.
 
 ---
 
@@ -393,11 +396,11 @@ Important behaviours:
 - **Recovery still notifies.** Ack stops reminders, not the all-clear — you always get
   the `✅ recovered` message.
 
-> **Deferred: ack persistence.** Acknowledgements and snoozes are tracked **in
-> memory**. If the control plane **restarts**, open incidents are rebuilt from the
-> next observation but their ack/snooze state is **lost**, so reminders can resume.
-> On-disk persistence of acks is on the roadmap. Plan around it: a server restart can
-> re-page you for a still-open, previously-acked incident.
+> **Persisted across restarts.** Acknowledgements and snoozes are stored in the
+> SQLite datastore. If the control plane **restarts**, open incidents are rebuilt from
+> the next observation and the persisted ack/snooze is re-applied when its incident
+> re-forms, so a previously-acked, still-open incident stays silenced (a worsening
+> severity or a recovery clears the ack, as always).
 
 How to do it: see [Configuring rules from the dashboard](#configuring-rules-from-the-dashboard)
 and the recipe [Snooze an incident](how-do-i.md#snooze-or-acknowledge-an-incident).
