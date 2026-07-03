@@ -1,0 +1,50 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import { CONTACT_HREF } from '../../consts';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'Getting started — Lookout docs';
+const description = 'Install Lookout and see your first server in the dashboard in about five minutes.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Getting started</h1>
+  <p>This guide takes you from nothing to your first server on the dashboard. If you can paste a command into a terminal, you can do this.</p>
+
+  <h2>What you’ll set up</h2>
+  <ul>
+    <li><strong>The control plane</strong> — the dashboard that collects reports. We host one for you on managed plans, or you deploy your own on-prem on Enterprise.</li>
+    <li><strong>The agent</strong> — a tiny program you put on each server you want to watch.</li>
+  </ul>
+
+  <h2>1. Get your dashboard</h2>
+  <p>Pick a plan on the <a href={`${base}pricing/`}>pricing page</a> or <a href={CONTACT_HREF}>contact sales</a>. We provision your hosted dashboard and give you two things:</p>
+  <ul>
+    <li>your <strong>dashboard URL</strong>, e.g. <code>https://monitor.example.com</code>, and</li>
+    <li>an <strong>enrollment token</strong> — agents use it to prove they’re allowed to report.</li>
+  </ul>
+  <p>On the Enterprise plan you can instead run the control plane on-prem — see <a href={`${base}docs/control-plane/`}>Control plane</a>.</p>
+
+  <h2>2. Download the agent</h2>
+  <p>Grab the signed agent binary for your platform from your dashboard’s downloads page (Linux, Windows, or macOS — one binary per platform).</p>
+
+  <h2>3. Run the agent</h2>
+  <p>On any server you want to watch, point the agent at your dashboard with your token:</p>
+  <pre><code>{`./lookout-agent run --server https://monitor.example.com --token your-enrollment-token --once`}</code></pre>
+  <p>Refresh the dashboard — your server is there, with its status, memory, disk, and services.</p>
+
+  <h2>4. Keep it reporting</h2>
+  <p>Drop <code>--once</code> to have the agent report continuously (every minute by default):</p>
+  <pre><code>{`./lookout-agent run --server https://monitor.example.com --token your-enrollment-token`}</code></pre>
+  <p>In production you’d install the agent as a service so it starts on boot — see <a href={`${base}docs/install-agent/`}>Install the agent</a>.</p>
+
+  <h2>Just want to look first?</h2>
+  <p>You can also collect a report without a server, to see exactly what the agent gathers:</p>
+  <pre><code>{`./lookout-agent report`}</code></pre>
+
+  <h2>Next steps</h2>
+  <ul>
+    <li><a href={`${base}docs/install-agent/`}>Install the agent</a> on Linux, Windows, or macOS as a service.</li>
+    <li><a href={`${base}docs/self-hosting/`}>Deploy the control plane on-prem</a> for your whole team (Enterprise).</li>
+    <li><a href={`${base}docs/alerts/`}>Set up alerts</a> so you’re told before something breaks.</li>
+  </ul>
+</Docs>

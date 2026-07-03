@@ -1,0 +1,43 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import { CONTACT_HREF } from '../../consts';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'FAQ — Lookout docs';
+const description = 'Common questions about Lookout: how it differs from Nagios, what it costs, what it collects, which platforms it supports, and how to deploy it.';
+
+const faqs = [
+  { q: 'How is Lookout different from Nagios?', a: 'Same core idea — watch hosts and services, alert on problems, extend with plugins — but modernized: a single agent that’s outbound-only (no open ports), plain-English health instead of jargon, and a setup a non-expert can actually complete. Lookout is also Nagios-plugin compatible, so the existing ecosystem works.' },
+  { q: 'Which platforms does the agent support?', a: 'Linux (Ubuntu, Debian, RHEL, Rocky, CentOS, AlmaLinux), Windows, and macOS — the same agent, one binary per platform.' },
+  { q: 'How do agents communicate, and is it secure?', a: 'The agent only makes outbound HTTPS connections to your control plane, authenticated with a per-fleet enrollment token compared in constant time. It never opens a listening port, so there’s nothing inbound to expose or firewall. See the Security page for the full design.' },
+  { q: 'What data does the agent collect?', a: 'Host info (hostname, OS, uptime), specs (CPU, memory, disk, load), installed packages, and running services. It never collects secrets, credentials, or file contents.' },
+  { q: 'Can I use my existing Nagios plugins?', a: 'Yes. Lookout runs any Nagios-compatible plugin — a program that prints a status line and exits 0/1/2/3 for OK/WARNING/CRITICAL/UNKNOWN — so the thousands of existing plugins work, alongside your own custom checks in any language.' },
+  { q: 'What alert channels are supported?', a: 'Email, Slack, and webhooks (e.g. PagerDuty, Opsgenie, or your own handler), with deduplication, recovery notices, and escalation so you get signal, not noise. See the Alerts page.' },
+  { q: 'What deployment options are there?', a: 'Two, both paid: a fully managed dashboard that we host and maintain for you, or an on-prem deployment (Enterprise) where the control plane runs inside your own network and your data never leaves it.' },
+  { q: 'What does Lookout cost?', a: 'Lookout is a commercial product priced per monitored server. Starter and Pro are flat per-server plans; Enterprise (including on-prem) is a custom quote. There is no free tier — see the pricing page.' },
+  { q: 'Do I need to know how to code?', a: 'No. If you can paste a command into a terminal, you can install the agent and read the dashboard. Engineers get an API, custom plugins, and CI/CD gates on top.' },
+  { q: 'Is it really secure?', a: 'It’s built secure-by-design — outbound-only agents, no shell calls, least privilege, constant-time auth. But no software is ever “zero vulnerabilities,” and we won’t claim it is. See the Security page.' },
+  { q: 'Can I monitor client fleets as an MSP?', a: 'Yes. There’s per-client partner pricing with volume discounts and an optional white-label — contact sales.' },
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+---
+
+<Docs title={title} description={description} jsonLd={faqJsonLd}>
+  <h1>Frequently asked questions</h1>
+  {faqs.map((f) => (
+    <div>
+      <h2>{f.q}</h2>
+      <p>{f.a}</p>
+    </div>
+  ))}
+  <hr />
+  <p>Still stuck? <a href={CONTACT_HREF}>Contact us</a>, or read the <a href={`${base}docs/getting-started/`}>getting-started guide</a>.</p>
+</Docs>

@@ -1,0 +1,87 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  jsonLd?: Record<string, any> | Record<string, any>[];
+}
+const { title, description, jsonLd: pageJsonLd } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const path = Astro.url.pathname.replace(/\/$/, '');
+const canonical = new URL(Astro.url.pathname.replace(/\/?$/, '/'), Astro.site).href;
+
+// Self-building breadcrumb: Home > Docs > (current page)
+const docsUrl = new URL(`${base}docs/`, Astro.site).href;
+const isDocsHome = canonical.replace(/\/$/, '') === docsUrl.replace(/\/$/, '');
+const crumbItems = [
+  { '@type': 'ListItem', position: 1, name: 'Home', item: new URL(base, Astro.site).href },
+  { '@type': 'ListItem', position: 2, name: 'Docs', item: docsUrl },
+];
+if (!isDocsHome) {
+  crumbItems.push({ '@type': 'ListItem', position: 3, name: title.split('—')[0].trim(), item: canonical });
+}
+const breadcrumb = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: crumbItems,
+};
+const docsJsonLd = [breadcrumb, ...(pageJsonLd ? (Array.isArray(pageJsonLd) ? pageJsonLd : [pageJsonLd]) : [])];
+
+const sections = [
+  {
+    group: 'Getting started',
+    links: [
+      { label: 'Overview', href: `${base}docs/` },
+      { label: 'Getting started', href: `${base}docs/getting-started/` },
+      { label: 'Install the agent', href: `${base}docs/install-agent/` },
+    ],
+  },
+  {
+    group: 'Running Lookout',
+    links: [
+      { label: 'Control plane', href: `${base}docs/control-plane/` },
+      { label: 'On-prem deployment', href: `${base}docs/self-hosting/` },
+      { label: 'Using the dashboard', href: `${base}docs/dashboard/` },
+      { label: 'Alerts', href: `${base}docs/alerts/` },
+    ],
+  },
+  {
+    group: 'Extend & secure',
+    links: [
+      { label: 'Plugins & custom checks', href: `${base}docs/plugins/` },
+      { label: 'Security', href: `${base}docs/security/` },
+      { label: 'FAQ', href: `${base}docs/faq/` },
+    ],
+  },
+];
+const active = (href: string) => path === href.replace(/\/$/, '');
+---
+
+<Base title={title} description={description} ogType="article" jsonLd={docsJsonLd}>
+  <div class="mx-auto max-w-6xl gap-10 px-6 py-12 lg:grid lg:grid-cols-[230px_1fr]">
+    <aside class="mb-8 lg:mb-0">
+      <nav class="lg:sticky lg:top-24 space-y-6 text-sm">
+        {sections.map((s) => (
+          <div>
+            <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">{s.group}</p>
+            <ul class="space-y-1">
+              {s.links.map((l) => (
+                <li>
+                  <a
+                    href={l.href}
+                    class={`block rounded-lg border-l-2 px-3 py-1.5 ${active(l.href) ? 'border-indigo-400 bg-indigo-500/10 font-semibold text-white' : 'border-transparent text-slate-400 hover:border-white/20 hover:text-white'}`}
+                  >{l.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </aside>
+
+    <article class="prose prose-invert max-w-none prose-headings:scroll-mt-24 prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline prose-code:text-cyan-300 prose-strong:text-white">
+      <slot />
+    </article>
+  </div>
+</Base>

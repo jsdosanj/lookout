@@ -1,0 +1,46 @@
+---
+import Docs from '../../layouts/Docs.astro';
+import { CONTACT_HREF } from '../../consts';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'On-prem deployment — Lookout docs';
+const description = 'Deploy the entire Lookout stack inside your own network with an Enterprise on-prem plan, so your monitoring data never leaves your infrastructure.';
+---
+
+<Docs title={title} description={description}>
+  <h1>On-prem deployment</h1>
+  <p>On the <a href={`${base}pricing/`}>Enterprise plan</a> you can run the whole Lookout stack inside your own network — the control plane and the agents — so your monitoring data never leaves your infrastructure. On-prem is a paid deployment option; <a href={CONTACT_HREF}>contact sales</a> to get the on-prem distribution and license.</p>
+
+  <h2>The shape of it</h2>
+  <ul>
+    <li>Run <strong>one control plane</strong> somewhere your servers can reach (a small VM is plenty).</li>
+    <li>Install the <strong>agent</strong> on each server you want to watch.</li>
+    <li>Put the dashboard behind <strong>TLS</strong> so it’s encrypted and access-controlled.</li>
+  </ul>
+
+  <h2>Recommended: Cloudflare in front</h2>
+  <p>The cleanest setup keeps the control plane private and lets <strong>Cloudflare</strong> handle TLS, DNS, access control, and ingress — with no open inbound ports on your box:</p>
+  <ul>
+    <li><strong>Cloudflare Tunnel</strong> connects your control plane outbound to Cloudflare; no port forwarding, no firewall holes.</li>
+    <li><strong>Cloudflare Access</strong> puts SSO + MFA in front of the dashboard, so only your team can open it.</li>
+    <li><strong>DNS + TLS</strong> are automatic at <code>monitor.yourcompany.com</code>.</li>
+  </ul>
+  <pre><code>{`# on the control-plane host
+./lookout-server                      # listens on localhost:8080
+cloudflared tunnel --url http://localhost:8080`}</code></pre>
+  <p>A full, step-by-step Cloudflare setup guide ships with the on-prem distribution.</p>
+
+  <h2>Keep your data yours</h2>
+  <ul>
+    <li>Reports and state never leave the control plane you run.</li>
+    <li>Agents send only the inventory needed to assess health — never secrets or file contents.</li>
+    <li>You hold the enrollment token; rotate it any time and re-deploy agents.</li>
+  </ul>
+
+  <h2>Updating</h2>
+  <p>Replace the control-plane binary with the latest release from your customer downloads page, then restart the service:</p>
+  <pre><code>{`sudo cp lookout-server /usr/local/bin/lookout-server
+sudo systemctl restart lookout-server   # if you run it as a service`}</code></pre>
+
+  <h2>Prefer not to run servers?</h2>
+  <p>Our managed plans run all of the above for you, with no infrastructure to maintain — see <a href={`${base}pricing/`}>pricing</a>.</p>
+</Docs>

@@ -1,0 +1,46 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'Control plane — Lookout docs';
+const description = 'Run the Lookout control plane: the service that ingests agent reports, computes health, and serves the dashboard.';
+---
+
+<Docs title={title} description={description}>
+  <h1>The control plane</h1>
+  <p>The control plane is the brain of Lookout. It receives reports from your agents, computes each server’s health, stores the latest state, and serves the dashboard. On managed plans we run it for you; on the Enterprise plan you run one control plane on-prem for your whole fleet.</p>
+
+  <h2>Run it (on-prem)</h2>
+  <p>On-prem customers get the <code>lookout-server</code> binary from their downloads page. Start it with your enrollment token:</p>
+  <pre><code>{`LOOKOUT_TOKEN=your-secret ./lookout-server --addr :8080 --data lookout-data.json`}</code></pre>
+
+  <h2>Options</h2>
+  <table>
+    <thead><tr><th>Flag / env</th><th>Default</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>--addr</code></td><td><code>:8080</code></td><td>Address the HTTP server listens on.</td></tr>
+      <tr><td><code>--data</code></td><td><code>lookout-data.json</code></td><td>Where the latest state is stored.</td></tr>
+      <tr><td><code>LOOKOUT_TOKEN</code></td><td>(unset)</td><td>Shared token agents must present. If unset, reports are unauthenticated (dev only).</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Endpoints</h2>
+  <ul>
+    <li><code>GET /</code> — the dashboard (overview of all servers).</li>
+    <li><code>GET /server/&lt;id&gt;</code> — one server’s detail page.</li>
+    <li><code>GET /api/v1/servers</code> — JSON list of servers with computed health.</li>
+    <li><code>POST /api/v1/agents/report</code> — where agents submit reports (token required).</li>
+    <li><code>GET /healthz</code> — liveness check.</li>
+  </ul>
+
+  <h2>Put it behind TLS</h2>
+  <p>The control plane speaks plain HTTP so you can run it behind whatever you already trust. <strong>Always</strong> terminate TLS in front of it in production — never expose it directly to the internet. Two easy options:</p>
+  <ul>
+    <li><strong>A reverse proxy</strong> (Caddy or nginx) that gets a certificate automatically and forwards to <code>localhost:8080</code>.</li>
+    <li><strong>Cloudflare Tunnel</strong> — exposes the dashboard with no open inbound ports at all (recommended). See <a href={`${base}docs/self-hosting/`}>On-prem deployment</a>.</li>
+  </ul>
+  <p>Then point your agents at the HTTPS URL with <code>--server https://monitor.example.com</code>.</p>
+
+  <blockquote>
+    <p><strong>Heads-up (MVP):</strong> today the control plane stores the latest state in a JSON file and authenticates agents with a shared token. History (time-series), a SQLite/Postgres store, and per-agent mTLS are on the roadmap. Don’t expose it without TLS.</p>
+  </blockquote>
+</Docs>

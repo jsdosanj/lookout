@@ -1,0 +1,149 @@
+---
+import '../styles/global.css';
+import { SITE_NAME, DEMO_URL, CONTACT_HREF } from '../consts';
+
+interface Props {
+  title: string;
+  description: string;
+  keywords?: string;
+  ogType?: string;
+  jsonLd?: Record<string, any> | Record<string, any>[];
+}
+const {
+  title,
+  description,
+  keywords = 'server monitoring, infrastructure monitoring, server health monitoring, lightweight monitoring agent, plain-English alerts, Datadog alternative, simple server monitoring, Nagios alternative, affordable server monitoring, uptime monitoring',
+  ogType = 'website',
+  jsonLd: pageJsonLd,
+} = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/'); // "/lookout/"
+const canonical = new URL(Astro.url.pathname.replace(/\/?$/, '/'), Astro.site).href;
+const path = Astro.url.pathname.replace(/\/$/, '');
+const ogImage = new URL(`${base}og-image.png`, Astro.site).href;
+
+const nav = [
+  { label: 'Why Lookout', href: `${base}why/` },
+  { label: 'Docs', href: `${base}docs/` },
+  { label: 'Pricing', href: `${base}pricing/` },
+  { label: 'Contact', href: `${base}contact/` },
+];
+const isActive = (href: string) => path === href.replace(/\/$/, '');
+
+const organization = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE_NAME,
+  url: new URL(base, Astro.site).href,
+  logo: new URL(`${base}apple-touch-icon.png`, Astro.site).href,
+  description: 'Lookout is simple, lightweight server and infrastructure monitoring built for humans — plain-English health and alerts.',
+};
+
+const structuredData = pageJsonLd
+  ? (Array.isArray(pageJsonLd) ? pageJsonLd : [pageJsonLd])
+  : [];
+const allJsonLd = [organization, ...structuredData];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content={keywords} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="icon" type="image/png" sizes="32x32" href={`${base}favicon-32x32.png`} />
+    <link rel="apple-touch-icon" sizes="180x180" href={`${base}apple-touch-icon.png`} />
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Lookout — server monitoring built for humans" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content="Lookout — server monitoring built for humans" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>:root { font-family: 'Inter', system-ui, sans-serif; }</style>
+    {allJsonLd.map((node) => (
+      <script type="application/ld+json" set:html={JSON.stringify(node)} />
+    ))}
+  </head>
+
+  <body class="bg-slate-950 text-slate-200 antialiased selection:bg-indigo-500/30">
+    <header class="sticky top-0 z-50 border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <a href={base} class="flex items-center gap-2 text-lg font-extrabold tracking-tight text-white">
+          <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm">◉</span>
+          Look<span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">out</span>
+        </a>
+        <div class="hidden items-center gap-7 text-sm font-medium md:flex">
+          {nav.map((n) => (
+            <a href={n.href} class={isActive(n.href) ? 'text-white' : 'text-slate-300 hover:text-white'}>{n.label}</a>
+          ))}
+        </div>
+        <a href={DEMO_URL} class="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/15 transition hover:bg-white/15">Live demo</a>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="border-t border-white/5">
+      <div class="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 py-12 text-sm md:grid-cols-4">
+        <div class="col-span-2 md:col-span-1">
+          <div class="flex items-center gap-2 font-extrabold text-white">
+            <span class="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-xs">◉</span>
+            Lookout
+          </div>
+          <p class="mt-3 text-slate-500">Infrastructure monitoring, built for humans.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold text-white">Product</h4>
+          <ul class="mt-3 space-y-2 text-slate-400">
+            <li><a class="hover:text-white" href={`${base}why/`}>Why Lookout</a></li>
+            <li><a class="hover:text-white" href={`${base}pricing/`}>Pricing</a></li>
+            <li><a class="hover:text-white" href={DEMO_URL}>Live demo</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-white">Docs</h4>
+          <ul class="mt-3 space-y-2 text-slate-400">
+            <li><a class="hover:text-white" href={`${base}docs/getting-started/`}>Getting started</a></li>
+            <li><a class="hover:text-white" href={`${base}docs/install-agent/`}>Install the agent</a></li>
+            <li><a class="hover:text-white" href={`${base}docs/self-hosting/`}>On-prem deployment</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-white">Company</h4>
+          <ul class="mt-3 space-y-2 text-slate-400">
+            <li><a class="hover:text-white" href={`${base}docs/`}>Documentation</a></li>
+            <li><a class="hover:text-white" href={`${base}docs/faq/`}>FAQ</a></li>
+            <li><a class="hover:text-white" href={CONTACT_HREF}>Contact sales</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/5 py-6 text-center text-xs text-slate-600">© 2026 Lookout · Commercial server monitoring</div>
+    </footer>
+  </body>
+</html>

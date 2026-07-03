@@ -1,0 +1,51 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const title = 'Alerts — Lookout docs';
+const description = 'Built-in alerting: rules per server and severity, delivered to Slack, Teams, or any webhook — with dedupe, flap-damping, escalation, recovery notices, stale-host detection, and acknowledge/snooze.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Alerts</h1>
+  <p>Monitoring only helps if it tells you in time. Lookout’s alerting watches each report (and sweeps the fleet for silent hosts), turns a host’s health into one clear message, and delivers it to Slack, Teams, or any webhook — and stays quiet otherwise.</p>
+
+  <h2>What triggers an alert</h2>
+  <ul>
+    <li>A server crosses into <strong>warning</strong> or <strong>critical</strong> (e.g. a full disk or high memory).</li>
+    <li>A server goes <strong>stale</strong> — no report for 5 minutes — which usually means it’s down. A background sweep runs every minute, so a host that stops reporting still pages you.</li>
+    <li>The severity gets <strong>worse</strong> while a problem is open (warning → critical re-alerts even if you’d acknowledged the warning).</li>
+  </ul>
+
+  <h2>Rules, set from the dashboard</h2>
+  <p>A rule decides <em>when</em> a server’s state is worth alerting on and <em>where</em> to send it — all from the Notifications page, no config files to edit. Each rule has:</p>
+  <ul>
+    <li><strong>Server</strong> — all hosts, or one exact host.</li>
+    <li><strong>Minimum severity</strong> — fire at warning, critical, or only when a host goes silent.</li>
+    <li><strong>Channels</strong> — one or more of your configured destinations.</li>
+    <li><strong>Flap window</strong> — how many consecutive observations confirm a state before it fires (damps flapping).</li>
+    <li><strong>Repeat every</strong> — how often to re-notify an open, unacknowledged incident.</li>
+  </ul>
+  <p>A sensible default rule (fleet-wide, warning and above, remind every 30 minutes) is seeded the first time you configure a channel, so you have working alerting out of the box.</p>
+
+  <h2>Channels</h2>
+  <ul>
+    <li><strong>Slack / Teams</strong> — an incoming-webhook message to the channel of your choice.</li>
+    <li><strong>Webhook</strong> — POST the event anywhere (PagerDuty, Opsgenie, your own handler).</li>
+    <li><strong>Email</strong> — delivered through Lookout’s hosted notification service (available on hosted plans). Self-hosters can point Lookout at their own notification service; a built-in SMTP mailer is on the roadmap.</li>
+  </ul>
+  <p>Every outbound URL — webhooks and the notification service — is validated against an <strong>SSRF guard</strong> before any request is sent (and re-checked on every send), so a webhook can never be pointed at internal services or cloud metadata.</p>
+
+  <h2>Designed to avoid noise</h2>
+  <ul>
+    <li><strong>Dedupe</strong> — one alert per problem, not one per report.</li>
+    <li><strong>Flap-damping</strong> — a value bouncing across a threshold won’t spam you.</li>
+    <li><strong>Escalation</strong> — an unresolved incident reminds you on a cadence you set.</li>
+    <li><strong>Acknowledge / snooze</strong> — say “I’m on it” to stop the reminders without waiting for recovery; a worsening severity still re-alerts.</li>
+    <li><strong>Recovery</strong> — you get a single <code>✅ recovered</code> notice when it clears.</li>
+  </ul>
+
+  <h2>What the messages look like</h2>
+  <pre><code>{`🟠 Lookout: web-01 is warning — disk /data is 84% full
+🔴 Lookout: db-02 is critical — disk / is 94% full
+⚪ Lookout: app-03 is stale
+✅ Lookout: web-01 recovered (was warning)`}</code></pre>
+</Docs>

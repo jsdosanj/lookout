@@ -1,0 +1,83 @@
+---
+import Docs from '../../layouts/Docs.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const title = 'Install the agent — Lookout docs';
+const description = 'Install the Lookout agent on Linux, Windows, or macOS, and run it as a service so it reports automatically.';
+---
+
+<Docs title={title} description={description}>
+  <h1>Install the agent</h1>
+  <p>The agent is a single, dependency-free binary. It only makes <strong>outbound</strong> connections to your control plane — it never opens a port on the server, so there’s nothing to expose to the network.</p>
+
+  <h2>Download the binary</h2>
+  <p>Download the signed agent for each platform from your dashboard’s downloads page, then copy it to each server:</p>
+  <pre><code>{`# the downloads page provides a per-platform binary:
+#   lookout-agent          Linux   (amd64 / arm64)
+#   lookout-agent.exe      Windows (amd64)
+#   lookout-agent-macos    macOS   (Apple Silicon / Intel)`}</code></pre>
+
+  <h2>Linux (systemd)</h2>
+  <p>Works on Ubuntu, Debian, RHEL, Rocky, CentOS, and AlmaLinux. Copy the binary, then create a service:</p>
+  <pre><code>{`sudo cp lookout-agent /usr/local/bin/
+
+sudo tee /etc/systemd/system/lookout-agent.service >/dev/null <<'EOF'
+[Unit]
+Description=Lookout agent
+After=network-online.target
+
+[Service]
+Environment=LOOKOUT_TOKEN=your-secret
+ExecStart=/usr/local/bin/lookout-agent run --server https://monitor.example.com
+Restart=always
+RestartSec=10
+DynamicUser=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now lookout-agent`}</code></pre>
+  <p><code>DynamicUser=yes</code> runs the agent as an unprivileged, isolated user — least privilege by default.</p>
+
+  <h2>Windows (service)</h2>
+  <p>Run PowerShell as Administrator. Use the built-in service manager:</p>
+  <pre><code>{`Copy-Item lookout-agent.exe C:\\Program Files\\Lookout\\lookout-agent.exe
+
+# create the service (set the token as a machine env var first)
+[Environment]::SetEnvironmentVariable("LOOKOUT_TOKEN","your-secret","Machine")
+sc.exe create LookoutAgent binPath= "\"C:\\Program Files\\Lookout\\lookout-agent.exe\" run --server https://monitor.example.com" start= auto
+sc.exe start LookoutAgent`}</code></pre>
+
+  <h2>macOS (launchd)</h2>
+  <pre><code>{`sudo cp lookout-agent-macos /usr/local/bin/lookout-agent
+
+sudo tee /Library/LaunchDaemons/dev.lookout.agent.plist >/dev/null <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+  <key>Label</key><string>dev.lookout.agent</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/lookout-agent</string>
+    <string>run</string><string>--server</string><string>https://monitor.example.com</string>
+  </array>
+  <key>EnvironmentVariables</key><dict><key>LOOKOUT_TOKEN</key><string>your-secret</string></dict>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+</dict></plist>
+EOF
+
+sudo launchctl load /Library/LaunchDaemons/dev.lookout.agent.plist`}</code></pre>
+
+  <h2>Verify</h2>
+  <p>Within a minute the server appears in your dashboard. To check locally, run a one-off report:</p>
+  <pre><code>{`lookout-agent report   # prints the JSON the agent would send`}</code></pre>
+
+  <h2>What the agent collects</h2>
+  <ul>
+    <li><strong>Host:</strong> hostname, OS/platform/version, kernel, architecture, uptime.</li>
+    <li><strong>Specs:</strong> CPU model + cores, memory, load average, disk usage.</li>
+    <li><strong>Packages:</strong> installed packages (dpkg/rpm, Homebrew/pkgutil, Windows registry).</li>
+    <li><strong>Services:</strong> running/stopped services (systemd, launchd, Windows services).</li>
+  </ul>
+  <p>It reads OS-native sources only and never collects your secrets or file contents.</p>
+</Docs>
