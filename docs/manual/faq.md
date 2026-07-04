@@ -10,7 +10,7 @@ shows plain-English health on a dashboard and alerts you when something breaks.
 
 ### Is it free?
 
-Yes — Lookout is open source under the **GNU AGPL-3.0**. Self-host it for free. (A
+Yes — Lookout is open source under the **Apache License 2.0**. Self-host it for free. (A
 paid managed-hosting option is part of the broader plan, but the software here is
 free.)
 

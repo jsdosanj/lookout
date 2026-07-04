@@ -5,3 +5,6 @@
 
 # Go
 /vendor/
+
+# Wrangler cache
+/.wrangler/

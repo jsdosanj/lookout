@@ -25,7 +25,7 @@ warns you *before* something breaks.
 You install a small **agent** on each server. It reports the host's system specs,
 installed packages, and running services to a central **control plane**, which
 computes a plain-English status (ok / warning / critical / stale) and serves a
-**dashboard**. You can self-host the whole thing for free (it's AGPL-3.0
+**dashboard**. You can self-host the whole thing for free (it's Apache-2.0
 open-source).
 
 What works **today** (the current MVP + Wave-1 alerting):
