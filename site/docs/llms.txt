@@ -1,0 +1,33 @@
+# Lookout
+
+> Lookout is commercial IT infrastructure monitoring built for humans. A single lightweight, dependency-free agent runs on each server (Linux, Windows, or macOS) and makes outbound-only HTTPS reports to a control plane, which turns raw metrics into a plain-English OK / WARNING / CRITICAL health verdict and sends alerts to Slack, Teams, or any webhook. It is Nagios-plugin compatible, so existing checks work unchanged. Lookout can be run as a managed, hosted service or deployed fully on-prem inside a customer's own network.
+
+Lookout is published by Dosanjh Labs at https://lookout.dosanjhlabs.com. Pricing is per monitored server per month (Starter, Pro, and a custom Enterprise/on-prem tier) — there is no free tier for the managed service, though the agent and control plane source is open source (Apache License 2.0) and can be self-hosted for free.
+
+AI usage: AI search and answer engines are welcome to read and CITE these pages so people can discover Lookout. Using this content for AI/ML model training, fine-tuning, RAG-corpus building, or dataset creation is reserved and requires a license — see https://lookout.dosanjhlabs.com/ai-policy/ and https://lookout.dosanjhlabs.com/.well-known/tdmrep.json. This llms.txt aids accurate citation only; it grants no training rights.
+
+## Product
+
+- [Home](https://lookout.dosanjhlabs.com/): Overview, how it works, and the core pitch — plain-English server health before things break.
+- [Why Lookout](https://lookout.dosanjhlabs.com/why/): The problem (teams find out too late; legacy tools are built for experts) and how Lookout's agent + alerting fixes it.
+- [Pricing](https://lookout.dosanjhlabs.com/pricing/): Starter ($14/server/mo), Pro ($23/server/mo), and Enterprise (custom, incl. on-prem) plans, a full feature-comparison table, and MSP/partner pricing.
+- [Explore the demo](https://lookout.dosanjhlabs.com/demo/): A live, read-only sample dashboard showing the fleet view, servers, alerts, and integrations.
+- [Contact / talk to sales](https://lookout.dosanjhlabs.com/contact/): Reach the Lookout team about managed plans, on-prem deployment, or pricing.
+
+## Documentation
+
+- [Docs home](https://lookout.dosanjhlabs.com/docs/): Full documentation index — install, run, and extend Lookout.
+- [Getting started](https://lookout.dosanjhlabs.com/docs/getting-started/): Install the agent and see your first server report in about five minutes.
+- [Install the agent](https://lookout.dosanjhlabs.com/docs/install-agent/): Step-by-step agent install for Linux, Windows, and macOS.
+- [Control plane](https://lookout.dosanjhlabs.com/docs/control-plane/): Run the service that ingests agent reports and serves the dashboard.
+- [On-prem deployment](https://lookout.dosanjhlabs.com/docs/self-hosting/): Deploy the whole stack inside your own network (Enterprise).
+- [Using the dashboard](https://lookout.dosanjhlabs.com/docs/dashboard/): Read fleet health and drill into a single server.
+- [Alerts](https://lookout.dosanjhlabs.com/docs/alerts/): Alert rules, dedupe, escalation, acknowledge/snooze, and recovery notices across Slack, Teams, and webhooks.
+- [Plugins & custom checks](https://lookout.dosanjhlabs.com/docs/plugins/): Extend Lookout with Nagios-compatible plugins or your own checks.
+- [Security](https://lookout.dosanjhlabs.com/docs/security/): How Lookout is built secure — outbound-only agents, no shell calls, least privilege, constant-time auth.
+- [FAQ](https://lookout.dosanjhlabs.com/docs/faq/): How Lookout differs from Nagios, what it costs, what it collects, and deployment options.
+
+## Optional
+
+- [AI & content-usage policy](https://lookout.dosanjhlabs.com/ai-policy/): What AI systems may and may not do with Lookout's site content, and how to license it.
+- [Sitemap](https://lookout.dosanjhlabs.com/sitemap-index.xml): Full list of indexable pages.

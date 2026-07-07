@@ -16,7 +16,7 @@ const {
   ogType = 'website',
   jsonLd: pageJsonLd,
 } = Astro.props;
-const base = import.meta.env.BASE_URL.replace(/\/?$/, '/'); // "/lookout/"
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/'); // "/"
 const canonical = new URL(Astro.url.pathname.replace(/\/?$/, '/'), Astro.site).href;
 const path = Astro.url.pathname.replace(/\/$/, '');
 const ogImage = new URL(`${base}og-image.png`, Astro.site).href;
@@ -38,10 +38,34 @@ const organization = {
   description: 'Lookout is simple, lightweight server and infrastructure monitoring built for humans — plain-English health and alerts.',
 };
 
+const website = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: new URL(base, Astro.site).href,
+  description: 'Lookout — commercial IT infrastructure monitoring built for humans.',
+  publisher: { '@type': 'Organization', name: 'Dosanjh Labs' },
+};
+
 const structuredData = pageJsonLd
   ? (Array.isArray(pageJsonLd) ? pageJsonLd : [pageJsonLd])
   : [];
-const allJsonLd = [organization, ...structuredData];
+
+// Auto-generate a Home > Page breadcrumb for any non-root page that doesn't
+// already supply its own BreadcrumbList (e.g. Docs.astro builds a richer one).
+const hasBreadcrumb = structuredData.some((n) => n && n['@type'] === 'BreadcrumbList');
+const autoBreadcrumb = !hasBreadcrumb && path !== ''
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: new URL(base, Astro.site).href },
+        { '@type': 'ListItem', position: 2, name: title.split('—')[0].trim(), item: canonical },
+      ],
+    }
+  : null;
+
+const allJsonLd = [organization, website, ...(autoBreadcrumb ? [autoBreadcrumb] : []), ...structuredData];
 ---
 
 <!doctype html>
@@ -140,6 +164,7 @@ const allJsonLd = [organization, ...structuredData];
             <li><a class="hover:text-white" href={`${base}docs/`}>Documentation</a></li>
             <li><a class="hover:text-white" href={`${base}docs/faq/`}>FAQ</a></li>
             <li><a class="hover:text-white" href={CONTACT_HREF}>Contact sales</a></li>
+            <li><a class="hover:text-white" href={`${base}ai-policy/`}>AI policy</a></li>
           </ul>
         </div>
       </div>
