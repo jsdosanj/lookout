@@ -1,0 +1,16 @@
+# Cloudflare Pages headers for lookout.dosanjhlabs.com.
+#
+# The /* block carries the AI-usage signals (added with the ai-policy layer).
+# Comments live out here, not between the header lines — Cloudflare's _headers
+# parser documents comments only outside rule blocks. The four AI headers:
+#   X-Robots-Tag: noai, noimageai  → publisher AI-training opt-out. It carries
+#     NO noindex/nofollow — search indexing is REQUIRED and stays fully on.
+#   Content-Usage: train-ai=n, search=y  → IETF AIPREF (draft-ietf-aipref-vocab)
+#     structured-field per RFC 9651: reserve training, permit search/answer use.
+#   TDM-Reservation: 1 + TDM-Policy: ...  → W3C TDM Reservation Protocol signal
+#     (full rule set in /.well-known/tdmrep.json). Human policy: /ai-policy/.
+/*
+  X-Robots-Tag: noai, noimageai
+  Content-Usage: train-ai=n, search=y
+  TDM-Reservation: 1
+  TDM-Policy: https://lookout.dosanjhlabs.com/ai-policy/

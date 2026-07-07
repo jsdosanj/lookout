@@ -1,0 +1,102 @@
+---
+import Base from '../layouts/Base.astro';
+import { CONTACT_HREF } from '../consts';
+
+const title = 'AI & Content-Usage Policy — Lookout';
+const description =
+  'How AI systems may use Lookout: answer engines are welcome to read and cite the site; use for AI/ML training or dataset creation is reserved. Read the policy and how to license.';
+
+const channels = [
+  { channel: 'robots.txt', where: '/robots.txt', what: 'Allows general search and AI answer/search agents; disallows named AI training & dataset crawlers.' },
+  { channel: 'TDM Reservation Protocol (W3C)', where: '/.well-known/tdmrep.json', what: 'tdm-reservation: 1 for the whole site — text & data mining rights reserved, referenced by EU CDSM Art. 4 & the EU AI Act.' },
+  { channel: 'AIPREF (IETF)', where: 'Content-Usage response header', what: 'train-ai=n, search=y — training declined, search permitted.' },
+  { channel: 'noai / noimageai', where: 'X-Robots-Tag response header', what: 'Publisher AI-training opt-out. Carries no noindex — search indexing stays required.' },
+  { channel: 'ai.txt', where: '/ai.txt', what: 'Human- and machine-readable summary of this policy.' },
+  { channel: 'llms.txt', where: '/llms.txt', what: 'A curated overview to help assistants describe and cite Lookout accurately. Grants no training rights.' },
+];
+---
+
+<Base title={title} description={description}>
+  <section class="mx-auto max-w-3xl px-6 py-16">
+    <h1 class="text-balance text-4xl font-black tracking-tight text-white md:text-5xl">AI &amp; content-usage policy</h1>
+    <p class="mt-6 text-pretty text-lg leading-relaxed text-slate-300">
+      Lookout is built to be found, quoted, and recommended by AI assistants — and to keep its written content out of the
+      datasets used to train them. This page explains, plainly, what AI systems may and may not do with our site content,
+      and how to license it.
+    </p>
+    <p class="mt-2 text-sm text-slate-500">Last updated 7 July 2026 · Applies to all of <strong class="text-slate-300">lookout.dosanjhlabs.com</strong></p>
+
+    <div class="mt-10 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-6">
+      <p class="text-slate-200"><strong class="text-white">In one line:</strong> AI search and answer engines are <strong class="text-white">welcome to read, index, and cite</strong> Lookout to help people find us. Using our site content to <strong class="text-white">train, fine-tune, or build datasets/RAG corpora</strong> for AI models is <strong class="text-white">reserved</strong> and requires a license.</p>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div class="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] p-6">
+        <h3 class="font-bold text-white">✓ Welcomed</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">Reading and indexing our pages, answering a user's question from them, quoting short passages <strong class="text-slate-200">with a link back to the source</strong>, and surfacing Lookout in AI-powered search. This drives people to a monitoring tool that solves a real problem — exactly what we want.</p>
+      </div>
+      <div class="rounded-2xl border border-amber-500/15 bg-amber-500/[0.04] p-6">
+        <h3 class="font-bold text-white">⚠ Reserved</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">Automated collection of our site content for <strong class="text-slate-200">AI/ML model training, fine-tuning, distillation, embedding-index or RAG-corpus building, or any dataset creation</strong> — whether by a crawler, an API, or a third-party dataset. Not permitted without a written license.</p>
+      </div>
+    </div>
+
+    <h2 class="mt-14 text-2xl font-black text-white">Why we draw the line here</h2>
+    <p class="mt-4 text-pretty leading-relaxed text-slate-300">
+      The copy on this site — the product explanations, the docs, the FAQ answers — is original work, written to help people
+      understand and run Lookout. We publish it openly so anyone can evaluate the product, and we're glad when an assistant
+      points someone here. But large-scale ingestion of that writing into a training set, where it's absorbed, un-attributed,
+      and resold as a model's own output, is a different act entirely. We reserve it. This keeps referral traffic flowing
+      while protecting the writing that makes Lookout worth citing.
+    </p>
+    <p class="mt-4 text-sm text-slate-500">
+      This is a policy about the <strong class="text-slate-300">marketing site's written content</strong>, not about Lookout's
+      application source code. The agent and control plane are published separately under the
+      <strong class="text-slate-300">Apache License 2.0</strong> — see the project repository for terms.
+    </p>
+
+    <h2 class="mt-14 text-2xl font-black text-white">How this policy is expressed (machine-readable)</h2>
+    <p class="mt-4 text-slate-400">The same reservation is declared through every current standard so automated agents can honor it without guessing:</p>
+    <div class="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/40">
+      <table class="w-full min-w-[36rem] border-collapse text-sm">
+        <thead>
+          <tr class="border-b border-white/10 text-left">
+            <th class="px-5 py-3 font-semibold text-slate-300">Channel</th>
+            <th class="px-5 py-3 font-semibold text-slate-300">Where</th>
+            <th class="px-5 py-3 font-semibold text-slate-300">What it says</th>
+          </tr>
+        </thead>
+        <tbody>
+          {channels.map((c) => (
+            <tr class="border-b border-white/5 last:border-b-0 align-top">
+              <td class="px-5 py-3 font-semibold text-white">{c.channel}</td>
+              <td class="px-5 py-3 text-indigo-300"><code>{c.where}</code></td>
+              <td class="px-5 py-3 text-slate-400">{c.what}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="mt-14 text-2xl font-black text-white">Agents we welcome vs. decline</h2>
+    <p class="mt-4 text-slate-400">Our <a class="text-indigo-400 hover:text-indigo-300" href="/robots.txt">robots.txt</a> is the authoritative list. In summary:</p>
+    <div class="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-6">
+        <h3 class="font-bold text-white">Welcomed (answer / search)</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">General search engines (Googlebot, Bingbot, DuckDuckBot), and AI answer/search agents including <strong class="text-slate-200">OAI-SearchBot</strong> &amp; <strong class="text-slate-200">ChatGPT-User</strong> (OpenAI), <strong class="text-slate-200">Claude-SearchBot</strong> &amp; <strong class="text-slate-200">Claude-User</strong> (Anthropic), <strong class="text-slate-200">PerplexityBot</strong> &amp; <strong class="text-slate-200">Perplexity-User</strong>, <strong class="text-slate-200">Applebot</strong>, <strong class="text-slate-200">DuckAssistBot</strong>, and Amazon's / Meta's / Mistral's search-and-user agents — all of which cite and link back.</p>
+      </div>
+      <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-6">
+        <h3 class="font-bold text-white">Declined (training / dataset)</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">Training and dataset crawlers including <strong class="text-slate-200">GPTBot</strong>, <strong class="text-slate-200">ClaudeBot</strong>, <strong class="text-slate-200">Google-Extended</strong>, <strong class="text-slate-200">Applebot-Extended</strong>, <strong class="text-slate-200">Meta-ExternalAgent</strong>, <strong class="text-slate-200">CCBot</strong> (Common Crawl), <strong class="text-slate-200">Bytespider</strong>, <strong class="text-slate-200">Amazonbot</strong>, <strong class="text-slate-200">cohere-ai</strong>, <strong class="text-slate-200">Diffbot</strong>, and other dataset/scraper bots. <span class="text-slate-500">Google-Extended and Applebot-Extended are training opt-outs only — blocking them does not affect Google or Apple search.</span></p>
+      </div>
+    </div>
+
+    <h2 class="mt-14 text-2xl font-black text-white">Licensing</h2>
+    <p class="mt-4 text-slate-400">Want to use Lookout's site content in a training set, an evaluation benchmark, a retrieval corpus, or another product? That's often possible under license. Reach out and tell us what you have in mind.</p>
+    <a href={CONTACT_HREF} class="mt-6 inline-block rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:opacity-90">Contact us about licensing →</a>
+
+    <div class="mt-14 rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-sm text-slate-500">
+      Content on this site is © 2026 Jasvant Dosanjh / Dosanjh Labs. All rights reserved except as licensed. Nothing here is legal advice.
+    </div>
+  </section>
+</Base>

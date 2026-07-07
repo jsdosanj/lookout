@@ -1,0 +1,45 @@
+# ai.txt — AI usage statement for Lookout (https://lookout.dosanjhlabs.com)
+# Human- and machine-readable. Last updated: 2026-07-07.
+# Full policy: https://lookout.dosanjhlabs.com/ai-policy/
+# See also: /robots.txt, /.well-known/tdmrep.json, /llms.txt, and the
+# X-Robots-Tag: noai, noimageai and Content-Usage response headers.
+
+Site: https://lookout.dosanjhlabs.com
+Owner: Dosanjh Labs
+Policy: https://lookout.dosanjhlabs.com/ai-policy/
+Contact: https://lookout.dosanjhlabs.com/contact/
+Updated: 2026-07-07
+
+# ---------------------------------------------------------------------------
+# PERMITTED — AI search / answer engines are welcome
+# ---------------------------------------------------------------------------
+# Reading, indexing, and CITING this site to answer user queries and refer
+# people back to Lookout is explicitly permitted and encouraged. Real-time
+# retrieval by assistant/search agents that link to the source is welcome.
+Search: allow
+Answer-engine-citation: allow
+Quotation-with-attribution: allow
+
+# ---------------------------------------------------------------------------
+# RESERVED — not permitted without a written license
+# ---------------------------------------------------------------------------
+# Automated collection of this content for AI/ML model TRAINING, fine-tuning,
+# distillation, RAG-corpus building, embedding-index creation, or any dataset
+# creation is NOT permitted. All text & data mining rights are reserved under
+# the TDM Reservation Protocol (see /.well-known/tdmrep.json) and expressed
+# via the IETF AIPREF vocabulary as: train-ai=n, search=y.
+Train-ai: disallow
+Fine-tuning: disallow
+Dataset-collection: disallow
+RAG-corpus-ingestion: disallow
+TDM-reservation: 1
+
+# ---------------------------------------------------------------------------
+# LICENSING
+# ---------------------------------------------------------------------------
+# This marketing site's written content is original and copyrighted
+# (© 2026 Jasvant Dosanjh / Dosanjh Labs). This reservation covers the
+# website's text, not Lookout's application source code, which is published
+# separately under the Apache License 2.0. Training/dataset licenses for the
+# site content are available — inquire via the contact page above.
+License-inquiries: https://lookout.dosanjhlabs.com/contact/
