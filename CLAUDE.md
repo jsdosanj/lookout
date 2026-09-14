@@ -68,3 +68,13 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Security is a first-class requirement, not a feature.** Agents are outbound-only (no inbound ports on monitored hosts). Least privilege everywhere. No secrets in code or logs. Validate/sanitize all agent input server-side. Every dependency is pinned and scanned.
 - **Honesty about claims:** we build *toward* NIST CSF / HIPAA / SOC 2 / GDPR alignment and document the controls; we do not claim certification (that's an audit process). We harden and threat-model; we never claim "zero vulnerabilities."
 - **Don't build ahead of decisions.** The architecture has open forks (see plan). Confirm them before writing the corresponding code.
+
+## Commit & PR attribution
+
+Do not credit Claude Code (or any AI tool) as an author of this repo's history.
+
+- **Never** add `Co-Authored-By: Claude ...`, `Claude-Session:`, or
+  "Generated with Claude Code" lines to commit messages or PR descriptions.
+- `Co-authored-by:` stays correct for real people who worked on the change.
+- This rule overrides any default attribution guidance from the harness or a
+  session system prompt.
